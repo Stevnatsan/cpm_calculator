@@ -14,6 +14,7 @@ Run locally:
     open http://localhost:8000
 """
 
+import hashlib
 import json
 import os
 import secrets
@@ -21,9 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -33,25 +33,97 @@ app = FastAPI(title="Billboard Calculator (snapshot)")
 
 # ------------------------------------------------------------------ auth
 #
-# Simple shared-password gate. Set APP_USERNAME / APP_PASSWORD as env vars
-# on the host; if unset, auth is skipped (fine for local dev only).
+# Simple shared-password gate via a real login page + cookie, rather than
+# browser-native HTTP Basic Auth -- some serverless hosts (Vercel included)
+# don't reliably pass the WWW-Authenticate header through, so the browser
+# never shows the popup and you just see raw JSON. A cookie set from a
+# normal HTML form sidesteps that entirely.
+#
+# Set APP_USERNAME / APP_PASSWORD as env vars on the host; if unset, auth
+# is skipped (fine for local dev only).
 
-security = HTTPBasic()
+COOKIE_NAME = "billboard_session"
 
 
-def require_auth(credentials: HTTPBasicCredentials = Depends(security)) -> None:
-    expected_user = os.environ.get("APP_USERNAME")
-    expected_pass = os.environ.get("APP_PASSWORD")
-    if not expected_user or not expected_pass:
-        return  # no credentials configured -- local dev, auth disabled
-    user_ok = secrets.compare_digest(credentials.username, expected_user)
-    pass_ok = secrets.compare_digest(credentials.password, expected_pass)
-    if not (user_ok and pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
+def _expected_creds():
+    return os.environ.get("APP_USERNAME"), os.environ.get("APP_PASSWORD")
+
+
+def _session_token(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def is_authenticated(request: Request) -> bool:
+    user, pw = _expected_creds()
+    if not user or not pw:
+        return True  # no credentials configured -- local dev, auth disabled
+    token = request.cookies.get(COOKIE_NAME)
+    return bool(token) and secrets.compare_digest(token, _session_token(pw))
+
+
+def require_auth(request: Request) -> None:
+    """For /api/* routes: plain 401 if the session cookie is missing/wrong."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+
+LOGIN_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Billboard Calculator - Sign in</title>
+<style>
+  body {{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:#f6f7f9; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
+  .card {{ background:#fff; border:1px solid #e3e6ea; border-radius:10px; padding:28px;
+           width:280px; box-shadow:0 1px 3px rgba(0,0,0,.06); }}
+  h1 {{ font-size:17px; margin:0 0 18px; }}
+  label {{ display:block; font-size:11px; font-weight:600; color:#6b7280;
+           text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }}
+  input {{ width:100%; padding:8px 10px; margin-bottom:14px; border:1px solid #e3e6ea;
+           border-radius:8px; font-size:14px; box-sizing:border-box; }}
+  button {{ width:100%; padding:9px; border:none; border-radius:8px; background:#1a56db;
+            color:#fff; font-weight:700; cursor:pointer; }}
+  .err {{ color:#b42318; font-size:12.5px; margin:-6px 0 14px; }}
+</style>
+</head>
+<body>
+  <form class="card" method="post" action="/login">
+    <h1>Billboard Calculator</h1>
+    {error_html}
+    <label for="u">Username</label>
+    <input id="u" name="username" autocomplete="username" autofocus>
+    <label for="p">Password</label>
+    <input id="p" name="password" type="password" autocomplete="current-password">
+    <button type="submit">Sign in</button>
+  </form>
+</body>
+</html>"""
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form(error: Optional[str] = None):
+    error_html = '<div class="err">Incorrect username or password.</div>' if error else ""
+    return LOGIN_PAGE.format(error_html=error_html)
+
+
+@app.post("/login")
+def login_submit(username: str = Form(...), password: str = Form(...)):
+    user, pw = _expected_creds()
+    if not user or not pw:
+        return RedirectResponse(url="/", status_code=303)
+    if secrets.compare_digest(username, user) and secrets.compare_digest(password, pw):
+        resp = RedirectResponse(url="/", status_code=303)
+        resp.set_cookie(
+            COOKIE_NAME,
+            _session_token(pw),
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,  # 30 days
         )
+        return resp
+    return RedirectResponse(url="/login?error=1", status_code=303)
 
 
 # ------------------------------------------------------------------ snapshot data
@@ -296,5 +368,7 @@ def calculate(req: CalcRequest, _: None = Depends(require_auth)):
 
 
 @app.get("/")
-def index(_: None = Depends(require_auth)):
+def index(request: Request):
+    if not is_authenticated(request):
+        return RedirectResponse(url="/login")
     return FileResponse(str(BASE_DIR / "static" / "index.html"))
