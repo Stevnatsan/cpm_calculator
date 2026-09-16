@@ -146,9 +146,9 @@ SNAPSHOT_GENERATED_AT: str = _SNAPSHOT["generated_at"]
 
 @dataclass
 class Billboard:
-    billboard_name: str
+    inventory_id: str
     inventory_name: str
-    address: str
+    inventory_address: str
     city_name: str
     district_name: str
     sub_district_name: str
