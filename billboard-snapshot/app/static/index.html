@@ -227,8 +227,8 @@ function boardRows(boards, months) {
   return boards.map(b => `
     <tr>
       <td>
-        <div class="name">${b.billboard_name || '—'}</div>
-        <div class="where">${[b.sub_district_name, b.district_name, b.city_name]
+        <div class="name">${b.inventory_name || '—'}</div>
+        <div class="where">${[b.inventory_address, b.sub_district_name, b.district_name, b.city_name]
           .filter(Boolean).join(' · ')}</div>
         <div>
           ${b.display_type_name ? `<span class="tag">${b.display_type_name}</span>` : ''}
