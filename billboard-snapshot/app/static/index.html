@@ -184,6 +184,85 @@
               justify-content: center; z-index: 1000; padding: 16px; cursor: zoom-out; }
   .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
   .plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ---- swap suggestions */
+  .swap { margin-top: 8px; padding: 7px 10px; border-radius: 7px; background: #f0f7f3; border: 1px solid #cdebd9;
+          font-size: 12px; }
+  .swap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+  .swap-row + .swap-row { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cdebd9; }
+  .swap .lead { font-weight: 700; color: var(--ok); }
+  .swap .nm { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .swap .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .swap .save { color: var(--ok); font-weight: 700; }
+  .swap .btn { padding: 3px 10px; font-size: 12px; margin-left: auto; }
+  .swap.none { background: #fbfcfd; border-color: var(--line); color: var(--muted); }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #16181d; color: #fff;
+           border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; gap: 12px; align-items: center;
+           box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 1100; max-width: calc(100% - 32px); }
+  .toast button { border: none; background: none; color: #93b4ff; font: inherit; font-weight: 700; cursor: pointer; }
+  .inline-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .inline-field select { font: inherit; font-size: 12.5px; padding: 4px 6px; border: 1px solid var(--line);
+          border-radius: 7px; background: #fff; color: var(--ink); }
+
+  /* ---- heatmap */
+  .map-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 8px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .legend { background: rgba(255,255,255,.94); border-radius: 8px; padding: 7px 9px; font-size: 11px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2); line-height: 1.5; }
+  .legend b { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+  .heat-pop { font-size: 12.5px; line-height: 1.5; }
+  .heat-pop .btn { margin-top: 6px; }
+
+  /* ---- budget curve */
+  .curve-card { margin-bottom: 18px; }
+  .curve-card h3 { font-size: 15px; margin: 0 0 4px; }
+  .curve-card p { margin: 0 0 10px; color: #374151; }
+  .curve-wrap { position: relative; }
+  .curve-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .curve-wrap .ax { font-size: 11px; fill: var(--muted); }
+  .curve-wrap .grid { stroke: #eef1f5; }
+  .curve-tip { position: absolute; pointer-events: none; background: #16181d; color: #fff; font-size: 12px;
+               padding: 7px 9px; border-radius: 7px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px));
+               font-variant-numeric: tabular-nums; }
+
+  /* ---- saved plans and compare */
+  .section-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+  .section-head h2 { font-size: 16px; margin: 0; }
+  .section-head .sp { flex: 1; }
+  .section-head input[type=search] { font: inherit; padding: 6px 10px; border: 1px solid var(--line);
+          border-radius: 8px; min-width: 200px; }
+  .client { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+            background: #fbfcfd; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .row-actions .btn { padding: 4px 10px; font-size: 12px; }
+  .cmp th { white-space: nowrap; }
+  .cmp td { min-width: 150px; }
+  .cmp td:first-child, .cmp th:first-child { min-width: 130px; color: var(--muted); font-weight: 600; font-size: 12px; }
+  .cmp .best { color: var(--ok); font-weight: 700; }
+  .cmp .best::after { content: " ★"; font-size: 11px; }
+  .bar { height: 5px; border-radius: 3px; background: var(--accent); opacity: .7; margin-top: 4px; }
+  .cmp ol { margin: 0; padding-left: 18px; font-size: 12px; }
+  .cmp .shared { color: var(--accent); font-weight: 600; }
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 20px; width: min(380px, calc(100% - 32px));
+           box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  dialog h3 { margin: 0 0 14px; font-size: 16px; }
+  dialog .field { margin-bottom: 10px; }
+  dialog .toolbar { justify-content: flex-end; }
+  .muted { color: var(--muted); }
+
+  /* ---- market */
+  .crumbs { font-size: 13px; }
+  .crumbs button { border: none; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; }
+  .sortable { cursor: pointer; user-select: none; }
+  .sortable.on { color: var(--accent); }
+  .mk tbody tr.click { cursor: pointer; }
+  .mk tbody tr.click:hover td { background: #f7f9fc; }
+  .mk td.split { color: var(--muted); }
+  .mk th, .mk td { padding: 9px 10px; vertical-align: middle; }
+  .mk td.name { white-space: nowrap; }
+  .overview { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-bottom: 14px; }
 </style>
 </head>
 <body>
@@ -194,6 +273,8 @@
   <div class="tabs" role="tablist">
     <button class="tab active" type="button" data-tab="planner" role="tab">Planner</button>
     <button class="tab" type="button" data-tab="custom" role="tab">Custom plan <span class="count" id="tabCount">0</span></button>
+    <button class="tab" type="button" data-tab="saved" role="tab">Saved plans <span class="count" id="savedCount">0</span></button>
+    <button class="tab" type="button" data-tab="market" role="tab">Market</button>
   </div>
 
   <div id="tab-planner">
@@ -246,6 +327,10 @@
           <label for="radius">Radius (km)</label>
           <input id="radius" type="number" min="0.1" max="50" step="any" value="2">
         </div>
+      </div>
+      <div class="map-bar">
+        <label class="toggle"><input type="checkbox" id="heatToggle"> CPM heatmap by district</label>
+        <span class="map-note" id="heatNote" style="margin:0"></span>
       </div>
       <div id="plannerMap" class="map"></div>
       <div class="map-note" id="plannerMapNote">Grey dots are every billboard in the city. Click the map to plan around that spot.</div>
@@ -327,11 +412,21 @@
           </div>
           <div class="totals" id="totals"></div>
           <div class="toolbar">
+            <button class="btn primary" type="button" id="saveCustom">Save plan</button>
             <button class="btn" type="button" id="sortCpm">Sort by CPM</button>
             <button class="btn" type="button" id="xlsCustom">Download Excel</button>
             <button class="btn" type="button" id="pdfCustom">Download PDF</button>
             <span class="sp"></span>
             <button class="btn" type="button" id="clearPlan">Clear plan</button>
+          </div>
+          <div class="toolbar">
+            <label class="inline-field">Suggest cheaper boards of the same type within
+              <select id="swapRadius">
+                <option value="1">1 km</option><option value="3" selected>3 km</option>
+                <option value="5">5 km</option><option value="10">10 km</option>
+                <option value="0">Off</option>
+              </select>
+            </label>
           </div>
           <div id="customMap" class="map small"></div>
           <div class="map-note">Blue numbers are your plan. Grey dots are the current search results; click one to add it.</div>
@@ -340,7 +435,61 @@
       </section>
     </div>
   </div>
+
+  <div id="tab-saved" hidden>
+    <div class="card">
+      <div class="section-head">
+        <h2>Saved plans</h2>
+        <span class="sp"></span>
+        <input id="savedFilter" type="search" placeholder="Filter by client or plan name" autocomplete="off">
+      </div>
+      <div class="hint" style="margin:-6px 0 10px">Plans are saved in this browser. Use <b>Share link</b> to send one to a colleague who has a login. Tick up to 4 plans to compare them below.</div>
+      <div class="scroll" id="savedList"></div>
+    </div>
+    <div class="card" id="compareCard">
+      <div class="section-head"><h2>Compare</h2><span class="sp"></span>
+        <button class="btn" type="button" id="clearCompare">Clear selection</button></div>
+      <div class="scroll" id="compareOut"></div>
+    </div>
+  </div>
+
+  <div id="tab-market" hidden>
+    <div class="card">
+      <div class="section-head">
+        <h2 class="crumbs" id="mkCrumbs">All cities</h2>
+        <span class="sp"></span>
+        <input id="mkFilter" type="search" placeholder="Filter by name" autocomplete="off">
+        <label class="inline-field">Type
+          <select id="mkType"><option value="">All</option><option value="OOH">OOH</option><option value="DOOH">DOOH</option></select>
+        </label>
+      </div>
+      <div class="overview" id="mkOverview"></div>
+      <div class="scroll" id="mkTable"></div>
+      <p class="hint">Typical CPM is the median, so a few extreme prices don't skew it. Ranges run from the 10th to the 90th percentile. Click a city to see its districts.</p>
+    </div>
+  </div>
 </div>
+
+<dialog id="saveDialog">
+  <form method="dialog" id="saveForm">
+    <h3>Save plan</h3>
+    <div class="field">
+      <label for="saveClient">Client</label>
+      <input id="saveClient" list="clientList" placeholder="e.g. Acme Coffee" autocomplete="off" required>
+      <datalist id="clientList"></datalist>
+    </div>
+    <div class="field">
+      <label for="saveName">Plan name</label>
+      <input id="saveName" placeholder="e.g. Jaksel Q1, 3 months" autocomplete="off" required>
+    </div>
+    <label class="toggle" id="saveReplaceWrap" hidden style="font-weight:500;margin-bottom:10px">
+      <input type="checkbox" id="saveReplace" checked> <span id="saveReplaceLabel">Update the saved copy</span></label>
+    <div class="toolbar">
+      <button class="btn" type="button" id="saveCancel">Cancel</button>
+      <button class="btn primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -428,18 +577,18 @@ $('f').addEventListener('submit', async e => {
   e.preventDefault();
   $('go').disabled = true; $('go').textContent = 'Calculating…';
   try {
+    const body = JSON.stringify({
+      city: $('city').value,
+      min_billboards: +$('minb').value,
+      max_billboards: +$('maxb').value,
+      budget: $('budget').value === '' ? null : +$('budget').value,
+      months: +$('months').value,
+      impression_target: $('target').value === '' ? 0 : +$('target').value,
+      display_type: $('dtype').value || null,
+      area: areaPayload(),
+    });
     const res = await fetch('/api/calculate', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        city: $('city').value,
-        min_billboards: +$('minb').value,
-        max_billboards: +$('maxb').value,
-        budget: $('budget').value === '' ? null : +$('budget').value,
-        months: +$('months').value,
-        impression_target: $('target').value === '' ? 0 : +$('target').value,
-        display_type: $('dtype').value || null,
-        area: areaPayload(),
-      })
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body,
     });
     lastPlanner = {
       data: await res.json(), months: +$('months').value,
@@ -448,6 +597,7 @@ $('f').addEventListener('submit', async e => {
     lastPlanner.areaLabel = areaLabel();
     render(lastPlanner.data, lastPlanner.months);
     drawPlannerPlan(lastPlanner.data);
+    if (!lastPlanner.data.error) loadCurve(body);
   } catch (err) {
     $('out').innerHTML = `<div class="msg warn">${err}</div>`;
   } finally {
@@ -487,7 +637,7 @@ function render(d, months) {
   if (d.error) { $('out').innerHTML = `<div class="msg warn">${d.error}</div>`; return; }
 
   const cls = d.feasible_count > 0 ? 'ok' : 'warn';
-  let html = `<div class="msg ${cls}">${d.message}</div>`;
+  let html = `<div class="msg ${cls}">${esc(d.message)}</div><div id="curveOut"></div>`;
 
   html += d.plans.map((p, i) => `
     <div class="plan ${p.recommended ? 'best' : ''}">
@@ -512,6 +662,7 @@ function render(d, months) {
       </tbody></table></div>
       <div class="plan-actions">
         <button class="btn primary" type="button" data-customize="${i}">Customize this plan</button>
+        <button class="btn" type="button" data-saveplan="${i}">Save plan</button>
         <button class="btn" type="button" data-xls="${i}">Download Excel</button>
         <button class="btn" type="button" data-pdf="${i}">Download PDF</button>
       </div>
@@ -536,19 +687,21 @@ function render(d, months) {
 
 let lastPlanner = null;
 const STORE_KEY = 'customPlan.v1';
-const custom = { boards: [], source: '' };
+const custom = { boards: [], source: '', savedId: null };
 let searchResults = [];
 
 // ---- tabs
+const TABS = ['planner', 'custom', 'saved', 'market'];
 function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-  $('tab-planner').hidden = name !== 'planner';
-  $('tab-custom').hidden = name !== 'custom';
+  TABS.forEach(t => { $('tab-' + t).hidden = t !== name; });
+  if (name === 'saved') renderSaved();
+  if (name === 'market') loadMarket();
   if (name === 'custom') {
     if (!customMap) customMap = makeMap($('customMap'));
     if (customMap) { customMap.invalidateSize(); drawCustomMap(); }
     if (!searchResults.length) runSearch();
-  } else if (plannerMap) {
+  } else if (name === 'planner' && plannerMap) {
     plannerMap.invalidateSize();
   }
 }
@@ -563,6 +716,7 @@ $('out').addEventListener('click', e => {
   if (custom.boards.length &&
       !confirm('Replace the billboards currently in your custom plan with this plan?')) return;
   custom.boards = p.billboards.map(b => ({...b}));
+  custom.savedId = null;
   custom.source = `Started from the ${p.recommended ? 'recommended' : p.billboard_count + '-billboard'} plan for ${lastPlanner.city}.`;
   $('cmonths').value = lastPlanner.months;
   $('cbudget').value = lastPlanner.budget;
@@ -585,7 +739,7 @@ function removeBoard(id) {
 function saveCustom() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
-      boards: custom.boards, source: custom.source,
+      boards: custom.boards, source: custom.source, savedId: custom.savedId,
       months: $('cmonths').value, budget: $('cbudget').value, target: $('ctarget').value,
     }));
   } catch (_) {}
@@ -596,6 +750,7 @@ function loadCustom() {
     if (!s) return;
     custom.boards = Array.isArray(s.boards) ? s.boards : [];
     custom.source = s.source || '';
+    custom.savedId = s.savedId || null;
     if (s.months) $('cmonths').value = s.months;
     $('cbudget').value = s.budget || '';
     $('ctarget').value = s.target || '';
@@ -604,7 +759,7 @@ function loadCustom() {
 
 $('clearPlan').addEventListener('click', () => {
   if (custom.boards.length && !confirm('Remove all billboards from your custom plan?')) return;
-  custom.boards = []; custom.source = '';
+  custom.boards = []; custom.source = ''; custom.savedId = null;
   saveCustom(); renderCustom();
 });
 $('sortCpm').addEventListener('click', () => {
@@ -723,6 +878,7 @@ function renderCustom() {
             <div><span>Total</span> <b>${rp(b.monthly_price * months)}</b></div>
             <div><span>Impr total</span> <b>${num(b.monthly_impression * months)}</b></div>
           </div>
+          ${swapHtml(b, i)}
         </div>
         <div class="side">
           <button class="rm" type="button" title="Remove from plan" aria-label="Remove from plan"
@@ -732,6 +888,8 @@ function renderCustom() {
 
   if (searchResults.length) renderResults();  // refresh "In plan" markers
   drawCustomMap();
+  scheduleSwaps();
+  if (!$('tab-saved').hidden) renderSaved();
 }
 
 // ---- add / remove clicks
@@ -807,6 +965,7 @@ async function onCityChange() {
     cityDistricts = dd.districts || [];
     renderChips();
     drawPoints(pp.points || []);
+    if ($('heatToggle').checked) drawHeat();
   } catch (_) {}
 }
 $('city').addEventListener('change', onCityChange);
@@ -849,7 +1008,8 @@ function drawPoints(points) {
   if (planLayer) { planLayer.remove(); planLayer = null; }
   pointsLayer = L.layerGroup(points.map(p =>
     L.circleMarker([p.lat, p.lng], { radius: 3, weight: 0, fillColor: '#6b7280', fillOpacity: .55 })
-      .bindTooltip(`${esc(p.name)} · CPM ${cpm(p.cpm)}`))).addTo(plannerMap);
+      .bindTooltip(`${esc(p.name)} · CPM ${cpm(p.cpm)}`)));
+  if (!$('heatToggle').checked) pointsLayer.addTo(plannerMap);
   const b = robustBounds(points.map(p => [p.lat, p.lng]));
   if (b) plannerMap.fitBounds(b.pad(0.05));
 }
@@ -1150,6 +1310,627 @@ $('out').addEventListener('click', e => {
   const i = +(btn.dataset.xls ?? btn.dataset.pdf);
   runExport(btn, btn.dataset.pdf != null ? 'pdf' : 'xls', () => plannerExportPlan(i));
 });
+
+// =================================================================
+// Shared helpers for the new views
+// =================================================================
+
+const api = async (url, body) => {
+  const res = await fetch(url, body === undefined ? {} : {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+};
+const short = n => {
+  if (n == null) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toLocaleString('en-US', {maximumFractionDigits: 1}) + 'B';
+  if (a >= 1e6) return (n / 1e6).toLocaleString('en-US', {maximumFractionDigits: a >= 1e8 ? 0 : 1}) + 'M';
+  if (a >= 1e3) return (n / 1e3).toLocaleString('en-US', {maximumFractionDigits: 0}) + 'K';
+  return Math.round(n).toLocaleString('en-US');
+};
+const rpShort = n => n == null ? '—' : 'Rp ' + short(n);
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+function toast(html, action) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${html}</span>` + (action ? `<button type="button">${esc(action.label)}</button>` : '');
+  if (action) t.querySelector('button').addEventListener('click', () => { action.run(); t.remove(); });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 7000);
+}
+const cleanBoard = b => { const x = {...b}; delete x.distance_km; delete x.cpm_saving_pct; return x; };
+
+// =================================================================
+// Swap suggestions: a cheaper nearby board for each board in the plan
+// =================================================================
+
+const swapState = { key: '', byId: {}, radius: 3, open: new Set(), loading: false };
+let swapTimer = null;
+
+function scheduleSwaps() {
+  const radius = +$('swapRadius').value;
+  const ids = custom.boards.map(b => String(b.inventory_id));
+  const key = ids.join(',') + '|' + radius;
+  if (key === swapState.key) return;
+  swapState.key = key;
+  clearTimeout(swapTimer);
+  if (!ids.length || !radius) { swapState.byId = {}; swapState.loading = false; return; }
+  swapState.loading = true;
+  swapTimer = setTimeout(async () => {
+    try {
+      const d = await api('/api/swaps', { ids, exclude: ids, radius_km: radius, limit: 3 });
+      if (swapState.key !== key) return;  // plan changed while we waited
+      swapState.byId = d.swaps || {};
+      swapState.radius = d.radius_km;
+    } catch (_) {
+      if (swapState.key === key) swapState.byId = {};
+    }
+    if (swapState.key === key) { swapState.loading = false; renderCustom(); }
+  }, 300);
+}
+$('swapRadius').addEventListener('change', () => renderCustom());
+
+function swapHtml(b, i) {
+  if (!+$('swapRadius').value || swapState.loading) return '';
+  const alts = swapState.byId[String(b.inventory_id)];
+  if (!alts) return '';
+  if (!alts.length)
+    return `<div class="swap none">No cheaper ${esc(b.display_type_name || '')} board within ${swapState.radius} km.</div>`;
+  const months = Math.max(1, +$('cmonths').value || 1);
+  const open = swapState.open.has(String(b.inventory_id));
+  const shown = open ? alts : alts.slice(0, 1);
+  const rows = shown.map((a, k) => {
+    const dist = a.distance_km == null ? 'same district' : `${a.distance_km.toFixed(1)} km away`;
+    const dCost = (a.monthly_price - b.monthly_price) * months;
+    const dImpr = (a.monthly_impression - b.monthly_impression) * months;
+    const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '±');
+    return `<div class="swap-row">
+      ${k === 0 ? '<span class="lead">Cheaper nearby</span>' : ''}
+      <span class="nm">${esc(a.inventory_name) || '—'}</span>
+      <span class="meta">CPM ${cpm(a.cpm_calculated)} <span class="save">(−${Math.round(a.cpm_saving_pct)}%)</span>
+        · ${dist} · cost ${sign(dCost)}${rpShort(Math.abs(dCost))} · impr ${sign(dImpr)}${short(Math.abs(dImpr))}</span>
+      ${mapLink(a)}
+      <button class="btn" type="button" data-swap="${i}" data-alt="${k}">Swap</button>
+    </div>`;
+  }).join('');
+  const more = alts.length > 1
+    ? `<button type="button" class="linkish" data-swapmore="${esc(b.inventory_id)}" style="font-size:11.5px;margin-top:4px">
+         ${open ? 'Show fewer' : `Show ${alts.length - 1} more`}</button>` : '';
+  return `<div class="swap">${rows}${more}</div>`;
+}
+
+$('drop').addEventListener('click', e => {
+  const more = e.target.closest('[data-swapmore]');
+  if (more) {
+    const id = more.dataset.swapmore;
+    swapState.open.has(id) ? swapState.open.delete(id) : swapState.open.add(id);
+    renderCustom();
+    return;
+  }
+  const btn = e.target.closest('[data-swap]');
+  if (!btn) return;
+  const i = +btn.dataset.swap, old = custom.boards[i];
+  const alt = (swapState.byId[String(old.inventory_id)] || [])[+btn.dataset.alt];
+  if (!alt || inPlan(alt.inventory_id)) return;
+  custom.boards[i] = cleanBoard(alt);
+  saveCustom(); renderCustom();
+  toast(`Swapped in ${esc(alt.inventory_name)}.`, { label: 'Undo', run: () => {
+    const j = custom.boards.findIndex(x => x.inventory_id === alt.inventory_id);
+    if (j >= 0 && !inPlan(old.inventory_id)) { custom.boards[j] = old; saveCustom(); renderCustom(); }
+  }});
+});
+
+// =================================================================
+// CPM heatmap on the planner map
+// =================================================================
+
+const HEAT_COLORS = ['#1a9850', '#91cf60', '#fee08b', '#fc8d59', '#d73027'];
+let heatLayer = null, heatLegend = null, heatSeq = 0;
+
+async function drawHeat() {
+  if (!plannerMap) return;
+  const seq = ++heatSeq;
+  const params = new URLSearchParams({ city: $('city').value });
+  if ($('dtype').value) params.set('display_type', $('dtype').value);
+  $('heatNote').textContent = 'Loading…';
+  let d;
+  try { d = await api('/api/market?' + params); } catch (err) { $('heatNote').textContent = 'Heatmap failed: ' + err.message; return; }
+  if (seq !== heatSeq || !$('heatToggle').checked) return;
+  clearHeat();
+  const rows = d.rows.filter(r => r.centre && r.median_cpm != null);
+  if (!rows.length) { $('heatNote').textContent = 'No district data for this city.'; return; }
+  // five bands, each holding about the same number of districts
+  const sorted = rows.map(r => r.median_cpm).sort((a, b) => a - b);
+  const cuts = [0.2, 0.4, 0.6, 0.8].map(q => sorted[Math.floor(q * (sorted.length - 1))]);
+  const band = v => cuts.filter(c => v > c).length;
+  heatLayer = L.layerGroup(rows.map(r => {
+    const color = HEAT_COLORS[band(r.median_cpm)];
+    const radius = Math.min(3000, Math.max(450, r.centre.spread_km * 1000));
+    return L.circle([r.centre.lat, r.centre.lng], {
+      radius, color, weight: 1.5, fillColor: color, fillOpacity: .45,
+    }).bindTooltip(`${esc(r.label)} · typical CPM ${cpm(r.median_cpm)}`)
+      .bindPopup(`<div class="heat-pop"><b>${esc(r.label)}</b><br>
+        ${plural(r.count, 'billboard')} (${r.ooh.count} OOH, ${r.dooh.count} DOOH)<br>
+        Typical CPM <b>${cpm(r.median_cpm)}</b><br>
+        CPM range ${cpm(r.cpm_p10)} – ${cpm(r.cpm_p90)}<br>
+        <button class="btn primary" type="button" data-target-district="${esc(r.key)}">Target this district</button></div>`);
+  })).addTo(plannerMap);
+  if (pointsLayer) pointsLayer.remove();
+  heatLegend = L.control({ position: 'bottomright' });
+  heatLegend.onAdd = () => {
+    const el = L.DomUtil.create('div', 'legend');
+    const edges = [sorted[0], ...cuts, sorted[sorted.length - 1]];
+    el.innerHTML = '<b>Typical CPM</b>' + HEAT_COLORS.map((c, k) =>
+      `<div><i style="background:${c}"></i>${short(edges[k])} – ${short(edges[k + 1])}</div>`).join('');
+    return el;
+  };
+  heatLegend.addTo(plannerMap);
+  $('heatNote').textContent = `${plural(rows.length, 'district')}, green is cheapest. Click a circle to target it.`;
+}
+function clearHeat() {
+  if (heatLayer) { heatLayer.remove(); heatLayer = null; }
+  if (heatLegend) { heatLegend.remove(); heatLegend = null; }
+}
+$('heatToggle').addEventListener('change', e => {
+  if (!plannerMap) { $('heatNote').textContent = 'Map unavailable'; return; }
+  if (e.target.checked) { drawHeat(); return; }
+  heatSeq++; clearHeat(); $('heatNote').textContent = '';
+  if (pointsLayer) pointsLayer.addTo(plannerMap);
+});
+$('dtype').addEventListener('change', () => { if ($('heatToggle').checked) drawHeat(); });
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-target-district]');
+  if (!btn) return;
+  const d = cityDistricts.find(x => x.key === btn.dataset.targetDistrict);
+  if (d && !area.districts.some(x => x.key === d.key)) area.districts.push(d);
+  renderChips();
+  if (plannerMap) plannerMap.closePopup();
+});
+
+// =================================================================
+// Budget curve: what each extra step of budget buys
+// =================================================================
+
+let curveSeq = 0;
+async function loadCurve(body) {
+  const seq = ++curveSeq;
+  let d;
+  try { d = await api('/api/budget_curve', body); } catch (_) { return; }
+  if (seq !== curveSeq || !$('curveOut')) return;
+  if (!d.points || d.points.length < 2) { $('curveOut').innerHTML = ''; return; }
+  $('curveOut').innerHTML = curveHtml(d);
+  wireCurve(d);
+}
+
+function curveSummary(d) {
+  const pts = d.points, first = pts.find(p => p.impressions > 0);
+  const capped = `With at most ${plural(d.max_billboards, 'billboard')}, spending more than ${rp(d.ceiling_cost)} buys nothing extra. Raise Max boards to go further.`;
+  if (d.knee_cost != null) {
+    const at = pts.find(p => p.cost === d.knee_cost);
+    return `Up to about <b>${rp(d.knee_cost)}</b>, the plan buys impressions at around ${cpm(at.blended_cpm)} CPM. ` +
+      `Past that, each extra rupiah buys less than half as many impressions. ${capped}`;
+  }
+  return `Impressions keep growing at a similar price per thousand all the way up, from ${cpm(first.blended_cpm)} CPM at the start. ${capped}`;
+}
+
+function curveHtml(d) {
+  const W = 720, H = 250, L0 = 58, R0 = 16, T0 = 14, B0 = 34;
+  const pts = d.points;
+  const xMax = pts[pts.length - 1].budget, yMax = Math.max(...pts.map(p => p.impressions)) * 1.08 || 1;
+  const x = v => L0 + v / xMax * (W - L0 - R0), y = v => H - B0 - v / yMax * (H - T0 - B0);
+  // a step line: impressions only change when the budget reaches the next point
+  const path = pts.map((p, k) => k === 0 ? `M${x(p.budget)},${y(p.impressions)}`
+    : `H${x(p.budget)} V${y(p.impressions)}`).join(' ');
+  const ticks = n => Array.from({length: n + 1}, (_, k) => k / n);
+  const grid = ticks(4).map(f => `<line class="grid" x1="${L0}" x2="${W - R0}" y1="${y(f * yMax)}" y2="${y(f * yMax)}"/>
+      <text class="ax" x="${L0 - 6}" y="${y(f * yMax) + 4}" text-anchor="end">${short(f * yMax)}</text>`).join('');
+  const xt = ticks(5).map(f => `<text class="ax" x="${x(f * xMax)}" y="${H - B0 + 16}" text-anchor="middle">${rpShort(f * xMax)}</text>`).join('');
+  const user = pts.find(p => p.is_user_budget);
+  const knee = d.knee_cost != null ? pts.find(p => p.cost === d.knee_cost) : null;
+  const marks = [
+    user ? `<line x1="${x(user.budget)}" x2="${x(user.budget)}" y1="${T0}" y2="${H - B0}" stroke="#16181d" stroke-dasharray="4 4"/>
+            <text class="ax" x="${x(user.budget) + 5}" y="${T0 + 10}" style="fill:#16181d">Your budget</text>` : '',
+    knee ? `<circle cx="${x(knee.budget)}" cy="${y(knee.impressions)}" r="6" fill="#b45309" stroke="#fff" stroke-width="2"/>
+            <text class="ax" x="${x(knee.budget) + 9}" y="${y(knee.impressions) + 16}" style="fill:#b45309;font-weight:700">Returns start to drop</text>` : '',
+  ].join('');
+  const dots = pts.map((p, k) => `<circle cx="${x(p.budget)}" cy="${y(p.impressions)}" r="3.5" fill="#1a56db"/>
+      <rect data-pt="${k}" x="${x(p.budget) - 12}" y="${T0}" width="24" height="${H - T0 - B0}" fill="transparent"/>`).join('');
+  return `<div class="card curve-card">
+    <h3>Budget curve</h3>
+    <p>${curveSummary(d)}</p>
+    <div class="curve-wrap">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Impressions bought at each budget">
+        ${grid}${xt}
+        <text class="ax" x="${L0}" y="${H - 2}">Budget (${d.months} month${d.months === 1 ? '' : 's'}) →</text>
+        <path d="${path}" fill="none" stroke="#1a56db" stroke-width="2.5" stroke-linejoin="round"/>
+        ${marks}${dots}
+      </svg>
+      <div class="curve-tip" hidden></div>
+    </div>
+    <div class="hint">Uses the same city, area, type, months and board limits as your search. Each dot is the most impressions the planner can buy at that budget. Hover for details.</div>
+  </div>`;
+}
+
+function wireCurve(d) {
+  const wrap = $('curveOut').querySelector('.curve-wrap'), tip = wrap.querySelector('.curve-tip');
+  wrap.addEventListener('mousemove', e => {
+    const r = e.target.closest('[data-pt]');
+    if (!r) { tip.hidden = true; return; }
+    const k = +r.dataset.pt, p = d.points[k];
+    const box = wrap.getBoundingClientRect(), rb = r.getBoundingClientRect();
+    tip.innerHTML = `Budget ${rp(p.budget)}<br>Spends ${rp(p.cost)} on ${plural(p.billboard_count, 'board')}<br>` +
+      `${num(p.impressions)} impressions · CPM ${cpm(p.blended_cpm)}` +
+      (p.marginal_cpm != null && k > 0 ? `<br>This step's extra impressions cost ${cpm(p.marginal_cpm)} CPM` : '');
+    tip.style.left = Math.min(box.width - 120, Math.max(120, rb.left - box.left + rb.width / 2)) + 'px';
+    tip.style.top = (e.clientY - box.top) + 'px';
+    tip.hidden = false;
+  });
+  wrap.addEventListener('mouseleave', () => { tip.hidden = true; });
+}
+
+// =================================================================
+// Saved plans: kept in this browser, shareable as a link
+// =================================================================
+
+const SAVED_KEY = 'savedPlans.v1';
+let savedPlans = [];
+const compareIds = new Set();
+const CURRENT = '__current__';
+
+function loadSaved() {
+  try { savedPlans = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); } catch (_) { savedPlans = []; }
+  if (!Array.isArray(savedPlans)) savedPlans = [];
+  $('savedCount').textContent = savedPlans.length;
+}
+function storeSaved() {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(savedPlans)); }
+  catch (_) { alert('Could not save: this browser is out of storage space for this site.'); }
+  $('savedCount').textContent = savedPlans.length;
+}
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// the save dialog; resolves with {client, name, replace} or null
+function askSave(defaults) {
+  const dlg = $('saveDialog');
+  $('clientList').innerHTML = [...new Set(savedPlans.map(p => p.client).filter(Boolean))]
+    .map(c => `<option value="${esc(c)}">`).join('');
+  $('saveClient').value = defaults.client || '';
+  $('saveName').value = defaults.name || '';
+  $('saveReplaceWrap').hidden = !defaults.replaceName;
+  $('saveReplace').checked = true;
+  $('saveReplaceLabel').textContent = `Update "${defaults.replaceName || ''}" instead of saving a new copy`;
+  return new Promise(resolve => {
+    const done = v => { dlg.close(); cleanup(); resolve(v); };
+    const onSubmit = e => {
+      e.preventDefault();
+      const client = $('saveClient').value.trim(), name = $('saveName').value.trim();
+      if (!client || !name) return;
+      done({ client, name, replace: !!defaults.replaceName && $('saveReplace').checked });
+    };
+    const onCancel = () => done(null);
+    const cleanup = () => {
+      $('saveForm').removeEventListener('submit', onSubmit);
+      $('saveCancel').removeEventListener('click', onCancel);
+      dlg.removeEventListener('cancel', onCancel);
+    };
+    $('saveForm').addEventListener('submit', onSubmit);
+    $('saveCancel').addEventListener('click', onCancel);
+    dlg.addEventListener('cancel', onCancel);
+    dlg.showModal();
+    (defaults.client ? $('saveName') : $('saveClient')).focus();
+  });
+}
+
+function storePlan(plan, replaceId) {
+  const i = replaceId ? savedPlans.findIndex(p => p.id === replaceId) : -1;
+  if (i >= 0) savedPlans[i] = { ...plan, id: replaceId };
+  else savedPlans.unshift({ ...plan, id: newId() });
+  storeSaved();
+  return i >= 0 ? replaceId : savedPlans[0].id;
+}
+
+$('saveCustom').addEventListener('click', async () => {
+  if (!custom.boards.length) { alert('Add at least one billboard to the plan first.'); return; }
+  const current = savedPlans.find(p => p.id === custom.savedId);
+  const ans = await askSave({ client: current?.client, name: current?.name, replaceName: current?.name });
+  if (!ans) return;
+  custom.savedId = storePlan({
+    name: ans.name, client: ans.client, savedAt: new Date().toISOString(),
+    months: Math.max(1, +$('cmonths').value || 1), budget: +$('cbudget').value || 0, target: +$('ctarget').value || 0,
+    source: custom.source, boards: custom.boards.map(b => ({...b})),
+  }, ans.replace ? custom.savedId : null);
+  custom.source = `Saved as "${ans.name}" for ${ans.client}.`;
+  saveCustom(); renderCustom();
+  toast(`Saved "${esc(ans.name)}" for ${esc(ans.client)}.`, { label: 'View saved plans', run: () => showTab('saved') });
+});
+
+$('out').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-saveplan]');
+  if (!btn || !lastPlanner) return;
+  const p = lastPlanner.data.plans[+btn.dataset.saveplan];
+  if (!p) return;
+  const kind = p.recommended ? 'Recommended' : `${p.billboard_count} boards`;
+  const ans = await askSave({ name: [kind, lastPlanner.areaLabel || lastPlanner.city, lastPlanner.budget ? rpShort(+lastPlanner.budget) : '']
+    .filter(Boolean).join(' · ') });
+  if (!ans) return;
+  storePlan({
+    name: ans.name, client: ans.client, savedAt: new Date().toISOString(),
+    months: lastPlanner.months, budget: +lastPlanner.budget || 0, target: +lastPlanner.target || 0,
+    source: `From the planner: ${[lastPlanner.city, lastPlanner.areaLabel].filter(Boolean).join(', ')}.`,
+    boards: p.billboards.map(b => ({...b})),
+  });
+  toast(`Saved "${esc(ans.name)}" for ${esc(ans.client)}.`, { label: 'View saved plans', run: () => showTab('saved') });
+});
+
+function currentAsPlan() {
+  return {
+    id: CURRENT, name: 'Current custom plan', client: savedPlans.find(p => p.id === custom.savedId)?.client || '',
+    months: Math.max(1, +$('cmonths').value || 1), budget: +$('cbudget').value || 0, target: +$('ctarget').value || 0,
+    boards: custom.boards,
+  };
+}
+
+function renderSaved() {
+  const f = $('savedFilter').value.trim().toLowerCase();
+  const list = savedPlans.filter(p => !f || `${p.client} ${p.name}`.toLowerCase().includes(f));
+  const row = (p, current) => {
+    const t = planTotals(p);
+    const checked = compareIds.has(p.id);
+    return `<tr>
+      <td style="width:28px"><input type="checkbox" data-compare="${esc(p.id)}" ${checked ? 'checked' : ''}
+          ${!checked && compareIds.size >= 4 ? 'disabled' : ''} ${current && !p.boards.length ? 'disabled' : ''}
+          aria-label="Compare ${esc(p.name)}"></td>
+      <td><div class="name">${esc(p.name)}</div>
+        <div class="where">${current ? 'Not saved; what is in the Custom plan tab now'
+          : `Saved ${new Date(p.savedAt).toLocaleDateString()} · ${plural(p.months, 'month')}`}</div></td>
+      <td class="num">${p.boards.length}</td>
+      <td class="num">${rp(t.cost)}</td>
+      <td class="num">${num(t.impr)}</td>
+      <td class="num">${cpm(t.blended)}</td>
+      <td><div class="row-actions">${current ? '' : `
+        <button class="btn" type="button" data-open="${esc(p.id)}">Open</button>
+        <button class="btn" type="button" data-share="${esc(p.id)}">Share link</button>
+        <button class="btn" type="button" data-delete="${esc(p.id)}">Delete</button>`}</div></td>
+    </tr>`;
+  };
+  const groups = {};
+  list.forEach(p => (groups[p.client || 'No client'] ||= []).push(p));
+  const head = `<thead><tr><th></th><th>Plan</th><th class="num">Boards</th><th class="num">Total cost</th>
+    <th class="num">Impressions</th><th class="num">Blended CPM</th><th></th></tr></thead>`;
+  let body = row(currentAsPlan(), true);
+  Object.keys(groups).sort((a, b) => a.localeCompare(b)).forEach(c => {
+    body += `<tr><td colspan="7" class="client">${esc(c)}</td></tr>` + groups[c].map(p => row(p, false)).join('');
+  });
+  $('savedList').innerHTML = `<table>${head}<tbody>${body}</tbody></table>` +
+    (savedPlans.length ? '' : '<div class="empty" style="margin-top:10px">No saved plans yet. Use <b>Save plan</b> on the Planner or Custom plan tab.</div>') +
+    (savedPlans.length && !list.length ? '<div class="empty" style="margin-top:10px">No saved plans match that filter.</div>' : '');
+  renderCompare();
+}
+$('savedFilter').addEventListener('input', renderSaved);
+
+$('savedList').addEventListener('change', e => {
+  const box = e.target.closest('[data-compare]');
+  if (!box) return;
+  box.checked ? compareIds.add(box.dataset.compare) : compareIds.delete(box.dataset.compare);
+  renderSaved();
+});
+$('clearCompare').addEventListener('click', () => { compareIds.clear(); renderSaved(); });
+
+$('savedList').addEventListener('click', e => {
+  const open = e.target.closest('[data-open]'), del = e.target.closest('[data-delete]'), share = e.target.closest('[data-share]');
+  if (open) {
+    const p = savedPlans.find(x => x.id === open.dataset.open);
+    if (!p) return;
+    if (custom.boards.length && custom.savedId !== p.id &&
+        !confirm('Replace the billboards currently in your custom plan with this saved plan?')) return;
+    custom.boards = p.boards.map(b => ({...b}));
+    custom.savedId = p.id;
+    custom.source = `Saved plan "${p.name}" for ${p.client}.`;
+    $('cmonths').value = p.months; $('cbudget').value = p.budget || ''; $('ctarget').value = p.target || '';
+    saveCustom(); renderCustom(); showTab('custom');
+  } else if (del) {
+    const p = savedPlans.find(x => x.id === del.dataset.delete);
+    if (!p || !confirm(`Delete "${p.name}" for ${p.client}? This can't be undone.`)) return;
+    savedPlans = savedPlans.filter(x => x.id !== p.id);
+    compareIds.delete(p.id);
+    if (custom.savedId === p.id) { custom.savedId = null; saveCustom(); }
+    storeSaved(); renderSaved();
+  } else if (share) {
+    const p = savedPlans.find(x => x.id === share.dataset.share);
+    if (p) copyShareLink(p);
+  }
+});
+
+// share links carry only ids and settings; the boards are looked up on open
+const b64 = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64 = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+async function copyShareLink(p) {
+  const payload = { n: p.name, c: p.client, m: p.months, b: p.budget || 0, t: p.target || 0,
+                    i: p.boards.map(b => b.inventory_id) };
+  const url = `${location.origin}/#plan=${b64(JSON.stringify(payload))}`;
+  try { await navigator.clipboard.writeText(url); toast('Share link copied. Anyone with a login can open it.'); }
+  catch (_) { prompt('Copy this link:', url); }
+}
+async function openSharedFromHash() {
+  const m = location.hash.match(/^#plan=([\w-]+)/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  try {
+    const s = JSON.parse(unb64(m[1]));
+    const d = await api('/api/boards?ids=' + encodeURIComponent((s.i || []).join(',')));
+    const boards = d.boards || [];
+    if (!boards.length) { toast('That shared plan has no billboards that are still in the data.'); return; }
+    const missing = (s.i || []).length - boards.length;
+    const same = savedPlans.find(p => p.name === s.n && p.client === s.c &&
+      p.boards.map(b => b.inventory_id).join() === boards.map(b => b.inventory_id).join());
+    if (!same) storePlan({
+      name: s.n || 'Shared plan', client: s.c || 'Shared', savedAt: new Date().toISOString(),
+      months: s.m || 1, budget: s.b || 0, target: s.t || 0, source: 'Opened from a share link.', boards,
+    });
+    showTab('saved');
+    toast(same ? `"${esc(s.n)}" is already in your saved plans.`
+      : `Added "${esc(s.n)}" to your saved plans.` + (missing > 0 ? ` ${plural(missing, 'billboard')} no longer in the data.` : ''));
+  } catch (_) {
+    toast('That share link could not be read.');
+  }
+}
+
+// ---- side-by-side comparison
+function renderCompare() {
+  const plans = [...compareIds].map(id => id === CURRENT ? currentAsPlan() : savedPlans.find(p => p.id === id))
+    .filter(p => p && p.boards.length);
+  $('compareCard').hidden = false;
+  if (plans.length < 2) {
+    $('compareOut').innerHTML = `<div class="empty">Tick ${plans.length ? 'one more plan' : 'two to four plans'} above to see them side by side.</div>`;
+    return;
+  }
+  const stats = plans.map(p => {
+    const t = planTotals(p);
+    const ids = new Set(p.boards.map(b => b.inventory_id));
+    const elsewhere = new Set(plans.filter(q => q !== p).flatMap(q => q.boards.map(b => b.inventory_id)));
+    const shared = [...ids].filter(id => elsewhere.has(id)).length;
+    const types = p.boards.reduce((a, b) => (a[b.display_type_name] = (a[b.display_type_name] || 0) + 1, a), {});
+    return { p, ...t, perMonth: t.cost / p.months, ids, shared,
+             cities: [...new Set(p.boards.map(b => b.city_name))], types };
+  });
+  const maxCost = Math.max(...stats.map(s => s.cost)), maxImpr = Math.max(...stats.map(s => s.impr));
+  const bestCpm = Math.min(...stats.map(s => s.blended ?? Infinity)), bestImpr = maxImpr;
+  const otherIds = s => new Set(stats.filter(x => x !== s).flatMap(x => [...x.ids]));
+  const rows = [
+    ['Client', s => esc(s.p.client || '—')],
+    ['Months', s => s.p.months],
+    ['Billboards', s => s.p.boards.length],
+    ['Total cost', s => `${rp(s.cost)}<div class="bar" style="width:${s.cost / maxCost * 100}%"></div>`],
+    ['Cost per month', s => rp(s.perMonth)],
+    ['Impressions', s => `<span class="${s.impr === bestImpr ? 'best' : ''}">${num(s.impr)}</span>
+        <div class="bar" style="width:${s.impr / maxImpr * 100}%;background:var(--ok)"></div>`],
+    ['Blended CPM', s => `<span class="${s.blended === bestCpm ? 'best' : ''}">${cpm(s.blended)}</span>`],
+    ['Budget', s => s.p.budget ? `${rp(s.p.budget)} <span class="muted">(${Math.round(s.cost / s.p.budget * 100)}% used)</span>` : '—'],
+    ['Impression target', s => s.p.target ? `${num(s.p.target)} <span class="muted">(${Math.round(s.impr / s.p.target * 100)}% reached)</span>` : '—'],
+    ['City', s => s.cities.map(esc).join(', ')],
+    ['Type mix', s => Object.entries(s.types).map(([k, v]) => `${v} ${esc(k)}`).join(' · ')],
+    ['In other plans too', s => s.shared ? `${plural(s.shared, 'board')}` : 'None'],
+    ['Billboards', s => {
+      const others = otherIds(s);
+      return `<ol>${s.p.boards.map(b => `<li class="${others.has(b.inventory_id) ? 'shared' : ''}">${esc(b.inventory_name)}
+        <span class="muted">· ${cpm(b.cpm_calculated)}</span></li>`).join('')}</ol>`;
+    }],
+  ];
+  $('compareOut').innerHTML = `<table class="cmp">
+    <thead><tr><th></th>${stats.map(s => `<th>${esc(s.p.name)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(([k, f]) => `<tr><td>${k}</td>${stats.map(s => `<td>${f(s)}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>
+  <div class="hint">★ marks the most impressions and the lowest blended CPM. Blue billboard names appear in more than one of these plans.</div>`;
+}
+
+// =================================================================
+// Market overview: per city, then per district
+// =================================================================
+
+const market = { city: null, sort: 'count', dir: -1, data: null, seq: 0 };
+async function loadMarket() {
+  const seq = ++market.seq;
+  const params = new URLSearchParams();
+  if (market.city) params.set('city', market.city);
+  if ($('mkType').value) params.set('display_type', $('mkType').value);
+  $('mkTable').innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    const d = await api('/api/market?' + params);
+    if (seq !== market.seq) return;
+    market.data = d;
+    renderMarket();
+  } catch (err) {
+    if (seq === market.seq) $('mkTable').innerHTML = `<div class="msg warn">Could not load market data: ${esc(err.message)}</div>`;
+  }
+}
+$('mkType').addEventListener('change', loadMarket);
+$('mkFilter').addEventListener('input', () => market.data && renderMarket());
+
+const MK_COLS = [
+  ['label', 'Area', r => r.label],
+  ['count', 'Billboards', r => r.count],
+  ['ooh', 'OOH', r => r.ooh.count],
+  ['dooh', 'DOOH', r => r.dooh.count],
+  ['median_cpm', 'Typical CPM', r => r.median_cpm],
+  ['ooh_cpm', 'Typical CPM · OOH', r => r.ooh.median_cpm],
+  ['dooh_cpm', 'Typical CPM · DOOH', r => r.dooh.median_cpm],
+  ['cpm_range', 'CPM range', r => r.cpm_p10],
+  ['median_price', 'Typical price / mo', r => r.median_price],
+];
+
+function renderMarket() {
+  const d = market.data, o = d.overall;
+  $('mkCrumbs').innerHTML = market.city
+    ? `<button type="button" id="mkBack">All cities</button> › ${esc(market.city)}`
+    : 'All cities';
+  $('mkFilter').placeholder = market.city ? 'Filter districts' : 'Filter cities';
+  $('mkOverview').innerHTML = `
+    <div class="stat"><div class="k">Billboards</div><div class="v">${num(o.count)}</div></div>
+    <div class="stat"><div class="k">Typical CPM</div><div class="v">${cpm(o.median_cpm)}</div></div>
+    <div class="stat"><div class="k">Typical CPM · OOH</div><div class="v">${cpm(o.ooh.median_cpm)}</div></div>
+    <div class="stat"><div class="k">Typical CPM · DOOH</div><div class="v">${cpm(o.dooh.median_cpm)}</div></div>
+    <div class="stat"><div class="k">Typical price / mo</div><div class="v">${rp(o.median_price)}</div></div>`;
+  const f = $('mkFilter').value.trim().toLowerCase();
+  const col = MK_COLS.find(c => c[0] === market.sort) || MK_COLS[1];
+  const rows = d.rows.filter(r => !f || r.label.toLowerCase().includes(f)).sort((a, b) => {
+    const va = col[2](a), vb = col[2](b);
+    if (va == null) return 1; if (vb == null) return -1;
+    return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * market.dir;
+  });
+  const head = MK_COLS.map(([k, label]) =>
+    `<th class="sortable ${k === 'label' ? '' : 'num'} ${k === market.sort ? 'on' : ''}" data-sort="${k}">${label}${
+      k === market.sort ? (market.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '<th></th>';
+  const body = rows.map(r => `<tr class="${market.city ? '' : 'click'}" data-row="${esc(r.key)}">
+      <td class="name">${esc(r.label)}</td>
+      <td class="num">${num(r.count)}</td>
+      <td class="num split">${num(r.ooh.count)}</td>
+      <td class="num split">${num(r.dooh.count)}</td>
+      <td class="num"><b>${cpm(r.median_cpm)}</b></td>
+      <td class="num">${cpm(r.ooh.median_cpm)}</td>
+      <td class="num">${cpm(r.dooh.median_cpm)}</td>
+      <td class="num">${short(r.cpm_p10)} – ${short(r.cpm_p90)}</td>
+      <td class="num">${rp(r.median_price)}</td>
+      <td><div class="row-actions"><button class="btn" type="button" data-planhere="${esc(r.key)}">Plan here</button></div></td>
+    </tr>`).join('');
+  $('mkTable').innerHTML = `<table class="mk"><thead><tr>${head}</tr></thead><tbody>${body ||
+    `<tr><td colspan="10" class="muted">Nothing matches that filter.</td></tr>`}</tbody></table>`;
+}
+
+$('tab-market').addEventListener('click', async e => {
+  if (e.target.id === 'mkBack') { market.city = null; $('mkFilter').value = ''; loadMarket(); return; }
+  const th = e.target.closest('[data-sort]');
+  if (th) {
+    const k = th.dataset.sort;
+    market.dir = market.sort === k ? -market.dir : (k === 'label' ? 1 : -1);
+    market.sort = k; renderMarket(); return;
+  }
+  const plan = e.target.closest('[data-planhere]');
+  if (plan) {
+    const key = plan.dataset.planhere;
+    const city = market.city || key;
+    if ($('city').value !== city) {
+      $('city').value = city;
+      await onCityChange();
+    }
+    if (market.city) {
+      const dd = cityDistricts.find(x => x.key === key);
+      if (dd && !area.districts.some(x => x.key === dd.key)) area.districts.push(dd);
+      renderChips();
+    }
+    if ($('mkType').value) $('dtype').value = $('mkType').value;
+    showTab('planner');
+    $('tab-planner').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+  const row = e.target.closest('tr.click[data-row]');
+  if (row && !market.city) { market.city = row.dataset.row; $('mkFilter').value = ''; loadMarket(); }
+});
+
+loadSaved();
+openSharedFromHash();
 
 loadCustom();
 renderCustom();
