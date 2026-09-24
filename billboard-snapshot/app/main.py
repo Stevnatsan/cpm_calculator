@@ -16,8 +16,11 @@ Run locally:
 
 import hashlib
 import json
+import math
 import os
+import re
 import secrets
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -166,7 +169,74 @@ class Billboard:
     last_active_period: Optional[str]
 
 
-ALL_BILLBOARDS: List[Billboard] = [Billboard(**row) for row in _SNAPSHOT["rows"]]
+def _is_usable(b: Billboard) -> bool:
+    # A few rows carry placeholder prices (Rp 1/month), which makes their CPM
+    # round to Rp 0 and float them to the top of every cheapest-CPM ranking.
+    # They aren't real offers, so leave them out of planning and search.
+    return b.monthly_price > 1 and b.cpm_calculated is not None and round(b.cpm_calculated) > 0
+
+
+_ALL_ROWS = [Billboard(**row) for row in _SNAPSHOT["rows"]]
+ALL_BILLBOARDS: List[Billboard] = [b for b in _ALL_ROWS if _is_usable(b)]
+HIDDEN_COUNT = len(_ALL_ROWS) - len(ALL_BILLBOARDS)
+
+
+# ------------------------------------------------------------------ areas
+#
+# The same district is spelled several ways in the source data
+# ("Setiabudi", "Setia Budi", "Kecamatan Setiabudi"), so districts are
+# grouped by a normalised key and shown under their most common spelling.
+
+_DISTRICT_PREFIXES = ("kecamatan ", "kec. ", "kec ")
+
+
+def _strip_district_prefix(name: str) -> str:
+    n = (name or "").strip()
+    for prefix in _DISTRICT_PREFIXES:
+        if n.lower().startswith(prefix):
+            return n[len(prefix):].strip()
+    return n
+
+
+def district_key(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", _strip_district_prefix(name).lower())
+
+
+def distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Great-circle distance (haversine)."""
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+class Area(BaseModel):
+    districts: Optional[List[str]] = None  # district keys from /api/districts
+    center_lat: Optional[float] = None
+    center_lng: Optional[float] = None
+    radius_km: Optional[float] = None
+
+    def active(self) -> bool:
+        return bool(self.districts) or self.has_point()
+
+    def has_point(self) -> bool:
+        return (
+            self.center_lat is not None
+            and self.center_lng is not None
+            and bool(self.radius_km)
+            and self.radius_km > 0
+        )
+
+    def matches(self, b: Billboard) -> bool:
+        if self.districts and district_key(b.district_name) not in self.districts:
+            return False
+        if self.has_point():
+            if b.latitude is None or b.longitude is None:
+                return False
+            if distance_km(self.center_lat, self.center_lng, b.latitude, b.longitude) > self.radius_km:
+                return False
+        return True
 
 
 class CalcRequest(BaseModel):
@@ -177,15 +247,17 @@ class CalcRequest(BaseModel):
     months: int = 1
     impression_target: float = 0  # 0 = no impression target
     display_type: Optional[str] = None  # 'OOH' | 'DOOH' | None
+    area: Optional[Area] = None  # optional district / distance targeting
 
 
-def fetch_candidates(city: str, display_type: Optional[str]) -> List[Billboard]:
+def fetch_candidates(city: str, display_type: Optional[str], area: Optional[Area] = None) -> List[Billboard]:
     city_key = city.strip().lower()
     rows = [
         b
         for b in ALL_BILLBOARDS
         if b.city_name.strip().lower() == city_key
         and (not display_type or b.display_type_name == display_type)
+        and (not area or area.matches(b))
     ]
     # cheapest CPM first, same ordering the live version's SQL used
     rows.sort(key=lambda b: (b.cpm_calculated is None, b.cpm_calculated or 0.0))
@@ -265,6 +337,7 @@ def meta(_: None = Depends(require_auth)):
     return {
         "snapshot_generated_at": SNAPSHOT_GENERATED_AT,
         "row_count": len(ALL_BILLBOARDS),
+        "hidden_count": HIDDEN_COUNT,
     }
 
 
@@ -278,6 +351,49 @@ def cities(_: None = Depends(require_auth)):
     rows = [{"city_name": k, "inventory_count": v} for k, v in counts.items()]
     rows.sort(key=lambda r: -r["inventory_count"])
     return {"cities": rows}
+
+
+@app.get("/api/districts")
+def districts(city: str, _: None = Depends(require_auth)):
+    city_key = city.strip().lower()
+    counts: Counter = Counter()
+    spellings: dict = defaultdict(Counter)
+    for b in ALL_BILLBOARDS:
+        if b.city_name.strip().lower() != city_key or not b.district_name:
+            continue
+        key = district_key(b.district_name)
+        if not key:
+            continue
+        counts[key] += 1
+        spellings[key][_strip_district_prefix(b.district_name)] += 1
+    rows = [
+        {"key": k, "label": spellings[k].most_common(1)[0][0], "inventory_count": n}
+        for k, n in counts.items()
+    ]
+    rows.sort(key=lambda r: r["label"].lower())
+    return {"districts": rows}
+
+
+@app.get("/api/points")
+def points(city: str, display_type: Optional[str] = None, _: None = Depends(require_auth)):
+    """Every billboard in a city as a small map point, for the planner map."""
+    city_key = city.strip().lower()
+    return {
+        "points": [
+            {
+                "id": b.inventory_id,
+                "name": b.inventory_name,
+                "lat": b.latitude,
+                "lng": b.longitude,
+                "cpm": b.cpm_calculated,
+            }
+            for b in ALL_BILLBOARDS
+            if b.city_name.strip().lower() == city_key
+            and b.latitude is not None
+            and b.longitude is not None
+            and (not display_type or b.display_type_name == display_type)
+        ]
+    }
 
 
 def _search_text(b: Billboard) -> str:
@@ -347,11 +463,14 @@ def calculate(req: CalcRequest, _: None = Depends(require_auth)):
             status_code=400,
         )
 
-    candidates = fetch_candidates(req.city, req.display_type)
+    area = req.area if req.area and req.area.active() else None
+    candidates = fetch_candidates(req.city, req.display_type, area)
 
     if not candidates:
+        where = f"the selected area of {req.city}" if area else req.city
         return {
-            "message": f"No priced inventory with impression data found in {req.city}.",
+            "message": f"No priced inventory with impression data found in {where}."
+            + (" Try a bigger radius or more districts." if area else ""),
             "plans": [],
             "candidates": [],
             "candidate_count": 0,
