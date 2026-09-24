@@ -543,6 +543,247 @@ def calculate(req: CalcRequest, _: None = Depends(require_auth)):
     }
 
 
+# ------------------------------------------------------------------ swap suggestions
+
+_BY_ID = {str(b.inventory_id): b for b in ALL_BILLBOARDS}
+
+
+@app.get("/api/boards")
+def boards(ids: str = "", _: None = Depends(require_auth)):
+    """Billboards by id (comma separated), in the order asked. Used to open shared plans."""
+    found = [_BY_ID.get(i.strip()) for i in ids.split(",") if i.strip()]
+    return {"boards": [b.__dict__ for b in found if b]}
+
+
+class SwapRequest(BaseModel):
+    ids: List[str]  # billboards to find swaps for
+    exclude: List[str] = []  # already in the plan, never suggested
+    radius_km: float = 3.0
+    limit: int = 3
+
+
+def cheaper_nearby(b: Billboard, radius_km: float, exclude: set, limit: int) -> List[dict]:
+    """Same-city, same-type billboards with a lower CPM, closest first within the radius.
+
+    Billboards without coordinates fall back to "same district", so they still
+    get suggestions.
+    """
+    if b.cpm_calculated is None:
+        return []
+    city_key = b.city_name.strip().lower()
+    by_distance = b.latitude is not None and b.longitude is not None
+    home_district = district_key(b.district_name)
+    out = []
+    for c in ALL_BILLBOARDS:
+        if (
+            str(c.inventory_id) in exclude
+            or c.cpm_calculated is None
+            or c.cpm_calculated >= b.cpm_calculated
+            or c.display_type_name != b.display_type_name
+            or c.city_name.strip().lower() != city_key
+        ):
+            continue
+        if by_distance:
+            if c.latitude is None or c.longitude is None:
+                continue
+            d = distance_km(b.latitude, b.longitude, c.latitude, c.longitude)
+            if d > radius_km:
+                continue
+        else:
+            if district_key(c.district_name) != home_district:
+                continue
+            d = None
+        out.append((c, d))
+    # cheapest CPM first; distance only breaks ties
+    out.sort(key=lambda x: (x[0].cpm_calculated, x[1] or 0.0))
+    return [
+        {
+            **c.__dict__,
+            "distance_km": d,
+            "cpm_saving_pct": (1 - c.cpm_calculated / b.cpm_calculated) * 100,
+        }
+        for c, d in out[:limit]
+    ]
+
+
+@app.post("/api/swaps")
+def swaps(req: SwapRequest, _: None = Depends(require_auth)):
+    radius = max(0.1, min(req.radius_km, 50.0))
+    limit = max(1, min(req.limit, 10))
+    exclude = {str(i) for i in req.exclude} | {str(i) for i in req.ids}
+    result = {}
+    for i in req.ids[:50]:
+        b = _BY_ID.get(str(i))
+        if b:
+            result[str(i)] = cheaper_nearby(b, radius, exclude, limit)
+    return {"radius_km": radius, "swaps": result}
+
+
+# ------------------------------------------------------------------ market stats
+
+
+def _quantile(sorted_vals: List[float], q: float) -> Optional[float]:
+    if not sorted_vals:
+        return None
+    i = min(len(sorted_vals) - 1, max(0, int(round(q * (len(sorted_vals) - 1)))))
+    return sorted_vals[i]
+
+
+def _cpm_summary(rows: List[Billboard]) -> dict:
+    cpms = sorted(b.cpm_calculated for b in rows if b.cpm_calculated is not None)
+    return {
+        "count": len(rows),
+        "median_cpm": _quantile(cpms, 0.5),
+        "cpm_p10": _quantile(cpms, 0.1),
+        "cpm_p90": _quantile(cpms, 0.9),
+    }
+
+
+def market_stats(rows: List[Billboard]) -> dict:
+    """Headline numbers for a group of billboards.
+
+    CPMs have a long tail (a few boards sit in the millions), so the typical
+    CPM is the median and the range is the 10th to 90th percentile.
+    """
+    prices = sorted(b.monthly_price for b in rows)
+    ooh = [b for b in rows if b.display_type_name == "OOH"]
+    dooh = [b for b in rows if b.display_type_name == "DOOH"]
+    return {
+        **_cpm_summary(rows),
+        "median_price": _quantile(prices, 0.5),
+        "price_p10": _quantile(prices, 0.1),
+        "price_p90": _quantile(prices, 0.9),
+        "total_monthly_impression": sum(b.monthly_impression for b in rows),
+        "ooh": _cpm_summary(ooh),
+        "dooh": _cpm_summary(dooh),
+    }
+
+
+def _centre(rows: List[Billboard]):
+    """Median position of a group and the median distance of its boards from it."""
+    pts = [(b.latitude, b.longitude) for b in rows if b.latitude is not None and b.longitude is not None]
+    if not pts:
+        return None
+    lats = sorted(p[0] for p in pts)
+    lngs = sorted(p[1] for p in pts)
+    lat, lng = _quantile(lats, 0.5), _quantile(lngs, 0.5)
+    spread = sorted(distance_km(lat, lng, p[0], p[1]) for p in pts)
+    return {"lat": lat, "lng": lng, "spread_km": _quantile(spread, 0.5)}
+
+
+@app.get("/api/market")
+def market(city: Optional[str] = None, display_type: Optional[str] = None, _: None = Depends(require_auth)):
+    """Market overview: one row per city, or per district when a city is given."""
+    rows = [b for b in ALL_BILLBOARDS if not display_type or b.display_type_name == display_type]
+    groups: dict = defaultdict(list)
+    labels: dict = defaultdict(Counter)
+    if city:
+        city_key = city.strip().lower()
+        for b in rows:
+            if b.city_name.strip().lower() != city_key:
+                continue
+            key = district_key(b.district_name)
+            if key:
+                groups[key].append(b)
+                labels[key][_strip_district_prefix(b.district_name)] += 1
+    else:
+        for b in rows:
+            if b.city_name:
+                groups[b.city_name].append(b)
+                labels[b.city_name][b.city_name] += 1
+    out = []
+    for key, members in groups.items():
+        row = {"key": key, "label": labels[key].most_common(1)[0][0], **market_stats(members)}
+        if city:
+            row["centre"] = _centre(members)
+        out.append(row)
+    out.sort(key=lambda r: -r["count"])
+    scope = [b for g in groups.values() for b in g]
+    return {"city": city, "display_type": display_type, "overall": market_stats(scope), "rows": out}
+
+
+# ------------------------------------------------------------------ budget curve
+
+
+@app.post("/api/budget_curve")
+def budget_curve(req: CalcRequest, _: None = Depends(require_auth)):
+    """Impressions the planner can buy at a range of budgets, same filters as /api/calculate.
+
+    Each point is the most impressions reachable at or below that budget, so
+    the curve never dips. The last points show where the billboard-count
+    limit stops extra budget from buying anything.
+    """
+    if req.min_billboards < 1 or req.max_billboards < req.min_billboards or req.max_billboards > 6:
+        return JSONResponse({"error": "invalid billboard count range"}, status_code=400)
+    area = req.area if req.area and req.area.active() else None
+    candidates = fetch_candidates(req.city, req.display_type, area)
+    months = max(1, req.months)
+    if len(candidates) < req.min_billboards:
+        return {"points": [], "message": "Not enough billboards in this area to draw a budget curve."}
+
+    def best_at(budget):
+        plans = solve(candidates, budget, months, 0, req.min_billboards, req.max_billboards)
+        return plans[-1] if plans else None
+
+    ceiling_plan = best_at(None)
+    ceiling = ceiling_plan["total_cost"]
+    floor = sum(sorted(c.monthly_price for c in candidates)[: req.min_billboards]) * months
+    user_budget = req.budget if req.budget and req.budget > 0 else None
+
+    steps = 16
+    lo, hi = floor, max(ceiling, floor * 1.01)
+    budgets = {lo * (hi / lo) ** (i / (steps - 1)) for i in range(steps)}
+    if user_budget and lo < user_budget < hi:
+        budgets.add(user_budget)
+    budgets.add(hi * 1.25)  # one step past the ceiling, to show the flat part
+
+    points = []
+    best = None
+    for budget in sorted(budgets):
+        p = best_at(budget)
+        if p and (best is None or p["total_impression"] > best["total_impression"]):
+            best = p
+        if not best:
+            continue
+        prev = points[-1] if points else None
+        extra_cost = best["total_cost"] - prev["cost"] if prev else best["total_cost"]
+        extra_impr = best["total_impression"] - prev["impressions"] if prev else best["total_impression"]
+        points.append(
+            {
+                "budget": budget,
+                "cost": best["total_cost"],
+                "impressions": best["total_impression"],
+                "billboard_count": best["billboard_count"],
+                "blended_cpm": best["blended_cpm"],
+                "marginal_cpm": blended_cpm(extra_cost, extra_impr) if extra_impr > 0 else None,
+                "is_user_budget": budget == user_budget,
+            }
+        )
+
+    # Where spending more stops paying off: the first point after which all
+    # the remaining impressions (up to the ceiling) cost more than twice the
+    # plan's average CPM at that point. Looking at everything that's left,
+    # not just the next step, keeps one lumpy step from moving the answer.
+    knee = None
+    last = points[-1] if points else None
+    for pt in points:
+        extra_impr = last["impressions"] - pt["impressions"]
+        if extra_impr <= 0 or not pt["blended_cpm"]:
+            continue
+        if blended_cpm(last["cost"] - pt["cost"], extra_impr) > 2 * pt["blended_cpm"]:
+            knee = pt["cost"]
+            break
+
+    return {
+        "months": months,
+        "max_billboards": req.max_billboards,
+        "ceiling_cost": ceiling,
+        "ceiling_impressions": ceiling_plan["total_impression"],
+        "knee_cost": knee,
+        "points": points,
+    }
+
+
 @app.get("/")
 def index(request: Request):
     if not is_authenticated(request):
