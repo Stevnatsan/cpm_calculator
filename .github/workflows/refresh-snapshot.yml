@@ -1,0 +1,71 @@
+# Regenerates billboard-snapshot/app/data/snapshot.json from BigQuery and
+# commits it, which makes Vercel redeploy with the fresh data.
+#
+# Does nothing until the repository secret GCP_SA_KEY is added (the whole
+# service-account JSON key). See billboard-snapshot/README.md, "Fresher data".
+name: Refresh snapshot
+
+on:
+  schedule:
+    - cron: "0 1 * * 1" # Mondays 01:00 UTC (08:00 WIB)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Write the snapshot even if it has far fewer rows than the current one"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: billboard-snapshot
+    env:
+      HAS_KEY: ${{ secrets.GCP_SA_KEY != '' }}
+    steps:
+      - name: Skip when no BigQuery key is set
+        if: env.HAS_KEY != 'true'
+        working-directory: .
+        run: echo "::notice::GCP_SA_KEY secret is not set, so the snapshot refresh is off. Nothing to do."
+
+      - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
+
+      - uses: actions/setup-python@v5
+        if: env.HAS_KEY == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        if: env.HAS_KEY == 'true'
+        run: pip install -r requirements-snapshot.txt
+
+      - name: Generate snapshot
+        if: env.HAS_KEY == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GCP_SA_KEY }}
+          BQ_PROJECT: ${{ vars.BQ_PROJECT }}
+        run: |
+          if [ -z "$BQ_PROJECT" ]; then unset BQ_PROJECT; fi
+          python generate_snapshot.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit if changed
+        if: env.HAS_KEY == 'true'
+        run: |
+          if git diff --quiet -- app/data/snapshot.json; then
+            echo "Snapshot unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add app/data/snapshot.json
+          git commit -m "Refresh billboard snapshot"
+          git push
