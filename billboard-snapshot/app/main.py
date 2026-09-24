@@ -1,12 +1,14 @@
 """
 Billboard calculator -- snapshot version.
 
-Reads app/data/snapshot.json (produced by generate_snapshot.py) once at
-startup and answers every request from memory. No BigQuery calls at
-request time, so no GCP credentials are needed to deploy this anywhere.
+By default reads app/data/snapshot.json (produced by generate_snapshot.py)
+once at startup and answers every request from memory, so no GCP
+credentials are needed to deploy this anywhere. Setting DATA_SOURCE=bigquery
+plus a service-account credential switches to live, cached BigQuery data;
+see app/data_source.py and the README. Every endpoint reads the data through
+data_source.current().
 
-Data freshness = whenever snapshot.json was last generated. See /api/meta
-or the banner in the UI for that timestamp.
+Data freshness is shown by /api/meta and the banner in the UI.
 
 Run locally:
     pip install -r requirements.txt
@@ -15,13 +17,12 @@ Run locally:
 """
 
 import hashlib
-import json
 import math
 import os
 import re
 import secrets
+import sys
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
@@ -30,7 +31,13 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR / "data" / "snapshot.json"
+# app/ has no __init__.py and Vercel imports main.py directly, so make the
+# sibling modules importable the same way under uvicorn and on Vercel.
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+import data_source  # noqa: E402
+from data_source import Billboard  # noqa: E402
 
 app = FastAPI(title="Billboard Calculator (snapshot)")
 
@@ -129,56 +136,17 @@ def login_submit(username: str = Form(...), password: str = Form(...)):
     return RedirectResponse(url="/login?error=1", status_code=303)
 
 
-# ------------------------------------------------------------------ snapshot data
+# ------------------------------------------------------------------ data
+#
+# Loaded at import time so a broken snapshot fails the deploy instead of the
+# first request. Endpoints call data() for the current copy, which is the
+# snapshot unless live BigQuery data is switched on.
+
+data_source.provider()
 
 
-def _load_snapshot():
-    if not DATA_PATH.exists():
-        raise RuntimeError(
-            f"{DATA_PATH} not found. Run generate_snapshot.py locally first, "
-            "then redeploy with that file included."
-        )
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        payload = json.load(f)
-    return payload
-
-
-_SNAPSHOT = _load_snapshot()
-SNAPSHOT_GENERATED_AT: str = _SNAPSHOT["generated_at"]
-
-
-@dataclass
-class Billboard:
-    inventory_id: str
-    inventory_name: str
-    inventory_address: str
-    city_name: str
-    district_name: str
-    sub_district_name: str
-    display_type_name: str
-    lighting_type: str
-    venue_type: str
-    image_url: str
-    latitude: Optional[float]
-    longitude: Optional[float]
-    monthly_price: float
-    monthly_impression: float
-    cpm: Optional[float]
-    cpm_calculated: Optional[float]
-    monthly_impression_source: Optional[str]
-    last_active_period: Optional[str]
-
-
-def _is_usable(b: Billboard) -> bool:
-    # A few rows carry placeholder prices (Rp 1/month), which makes their CPM
-    # round to Rp 0 and float them to the top of every cheapest-CPM ranking.
-    # They aren't real offers, so leave them out of planning and search.
-    return b.monthly_price > 1 and b.cpm_calculated is not None and round(b.cpm_calculated) > 0
-
-
-_ALL_ROWS = [Billboard(**row) for row in _SNAPSHOT["rows"]]
-ALL_BILLBOARDS: List[Billboard] = [b for b in _ALL_ROWS if _is_usable(b)]
-HIDDEN_COUNT = len(_ALL_ROWS) - len(ALL_BILLBOARDS)
+def data() -> data_source.DataStore:
+    return data_source.current()
 
 
 # ------------------------------------------------------------------ areas
@@ -254,7 +222,7 @@ def fetch_candidates(city: str, display_type: Optional[str], area: Optional[Area
     city_key = city.strip().lower()
     rows = [
         b
-        for b in ALL_BILLBOARDS
+        for b in data().billboards
         if b.city_name.strip().lower() == city_key
         and (not display_type or b.display_type_name == display_type)
         and (not area or area.matches(b))
@@ -334,17 +302,20 @@ def solve(candidates, budget, months, impression_target, min_n, max_n):
 
 @app.get("/api/meta")
 def meta(_: None = Depends(require_auth)):
+    d = data()
     return {
-        "snapshot_generated_at": SNAPSHOT_GENERATED_AT,
-        "row_count": len(ALL_BILLBOARDS),
-        "hidden_count": HIDDEN_COUNT,
+        "snapshot_generated_at": d.generated_at,
+        "data_source": d.source,
+        "data_note": d.note,
+        "row_count": len(d.billboards),
+        "hidden_count": d.hidden_count,
     }
 
 
 @app.get("/api/cities")
 def cities(_: None = Depends(require_auth)):
     counts: dict = {}
-    for b in ALL_BILLBOARDS:
+    for b in data().billboards:
         if not b.city_name:
             continue
         counts[b.city_name] = counts.get(b.city_name, 0) + 1
@@ -358,7 +329,7 @@ def districts(city: str, _: None = Depends(require_auth)):
     city_key = city.strip().lower()
     counts: Counter = Counter()
     spellings: dict = defaultdict(Counter)
-    for b in ALL_BILLBOARDS:
+    for b in data().billboards:
         if b.city_name.strip().lower() != city_key or not b.district_name:
             continue
         key = district_key(b.district_name)
@@ -387,33 +358,13 @@ def points(city: str, display_type: Optional[str] = None, _: None = Depends(requ
                 "lng": b.longitude,
                 "cpm": b.cpm_calculated,
             }
-            for b in ALL_BILLBOARDS
+            for b in data().billboards
             if b.city_name.strip().lower() == city_key
             and b.latitude is not None
             and b.longitude is not None
             and (not display_type or b.display_type_name == display_type)
         ]
     }
-
-
-def _search_text(b: Billboard) -> str:
-    return " ".join(
-        filter(
-            None,
-            [
-                str(b.inventory_id),
-                b.inventory_name,
-                b.inventory_address,
-                b.sub_district_name,
-                b.district_name,
-                b.city_name,
-            ],
-        )
-    ).lower()
-
-
-# Precomputed once at startup so each search is a plain substring scan.
-_SEARCH_INDEX = [(_search_text(b), b) for b in ALL_BILLBOARDS]
 
 
 @app.get("/api/search")
@@ -439,7 +390,7 @@ def search(
 
     matches = [
         (phrase in text, b)
-        for text, b in _SEARCH_INDEX
+        for text, b in data().search_index
         if all(w in text for w in words)
         and (not city_key or b.city_name.strip().lower() == city_key)
         and (not display_type or b.display_type_name == display_type)
@@ -545,13 +496,11 @@ def calculate(req: CalcRequest, _: None = Depends(require_auth)):
 
 # ------------------------------------------------------------------ swap suggestions
 
-_BY_ID = {str(b.inventory_id): b for b in ALL_BILLBOARDS}
-
-
 @app.get("/api/boards")
 def boards(ids: str = "", _: None = Depends(require_auth)):
     """Billboards by id (comma separated), in the order asked. Used to open shared plans."""
-    found = [_BY_ID.get(i.strip()) for i in ids.split(",") if i.strip()]
+    by_id = data().by_id
+    found = [by_id.get(i.strip()) for i in ids.split(",") if i.strip()]
     return {"boards": [b.__dict__ for b in found if b]}
 
 
@@ -574,7 +523,7 @@ def cheaper_nearby(b: Billboard, radius_km: float, exclude: set, limit: int) -> 
     by_distance = b.latitude is not None and b.longitude is not None
     home_district = district_key(b.district_name)
     out = []
-    for c in ALL_BILLBOARDS:
+    for c in data().billboards:
         if (
             str(c.inventory_id) in exclude
             or c.cpm_calculated is None
@@ -611,9 +560,10 @@ def swaps(req: SwapRequest, _: None = Depends(require_auth)):
     radius = max(0.1, min(req.radius_km, 50.0))
     limit = max(1, min(req.limit, 10))
     exclude = {str(i) for i in req.exclude} | {str(i) for i in req.ids}
+    by_id = data().by_id
     result = {}
     for i in req.ids[:50]:
-        b = _BY_ID.get(str(i))
+        b = by_id.get(str(i))
         if b:
             result[str(i)] = cheaper_nearby(b, radius, exclude, limit)
     return {"radius_km": radius, "swaps": result}
@@ -674,7 +624,7 @@ def _centre(rows: List[Billboard]):
 @app.get("/api/market")
 def market(city: Optional[str] = None, display_type: Optional[str] = None, _: None = Depends(require_auth)):
     """Market overview: one row per city, or per district when a city is given."""
-    rows = [b for b in ALL_BILLBOARDS if not display_type or b.display_type_name == display_type]
+    rows = [b for b in data().billboards if not display_type or b.display_type_name == display_type]
     groups: dict = defaultdict(list)
     labels: dict = defaultdict(Counter)
     if city:

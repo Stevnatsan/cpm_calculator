@@ -506,6 +506,10 @@ const thumb = (b, cls = '') => b.image_url
 const mapLink = b => hasPos(b)
   ? `<a class="maplink" href="${gmaps(b)}" target="_blank" rel="noopener">Map ↗</a>` : '';
 let snapshotStamp = '';
+let dataIsLive = false;
+const dataFreshnessLine = () => dataIsLive
+  ? `Live data as of ${snapshotStamp || 'unknown'}. Prices and impressions are estimates.`
+  : `Snapshot data as of ${snapshotStamp || 'unknown'}. Not live; prices and impressions are estimates.`;
 
 // click any photo to see it large
 document.addEventListener('click', e => {
@@ -548,9 +552,13 @@ fetch('/api/meta').then(r => r.json()).then(d => {
   const dt = new Date(d.snapshot_generated_at);
   const stamp = isNaN(dt) ? d.snapshot_generated_at : dt.toLocaleString();
   snapshotStamp = stamp;
+  const live = d.data_source === 'bigquery';
+  dataIsLive = live;
   $('snapshotNote').textContent =
-    `Snapshot data as of ${stamp} (${d.row_count.toLocaleString()} priced billboards) \u2014 not live.` +
-    (d.hidden_count ? ` ${d.hidden_count} billboards with a Rp 0 CPM are hidden.` : '');
+    (live ? `Live data, refreshed ${stamp} (${d.row_count.toLocaleString()} priced billboards).`
+          : `Snapshot data as of ${stamp} (${d.row_count.toLocaleString()} priced billboards) \u2014 not live.`) +
+    (d.hidden_count ? ` ${d.hidden_count} billboards with a Rp 0 CPM are hidden.` : '') +
+    (d.data_note ? ` ${d.data_note}` : '');
 }).catch(() => {});
 
 // ---- city list
@@ -1180,7 +1188,7 @@ async function exportExcel(plan) {
     b.latitude, b.longitude, b.inventory_id, b.last_active_period,
   ]);
   const top = [[plan.title], [plan.subtitle],
-    [`Snapshot data as of ${snapshotStamp || 'unknown'}. Not live; prices and impressions are estimates.`], []];
+    [dataFreshnessLine()], []];
   const headRow = top.length + summary.length + 1;
   const aoa = [...top, ...summary, [], head, ...rows, [],
     ['', 'Total', '', '', '', '', '', t.blended, '', '', t.cost, '', t.impr]];
@@ -1281,7 +1289,7 @@ async function exportPdf(plan) {
     },
     didDrawPage: () => {
       doc.setFontSize(7.5).setTextColor(107, 114, 128);
-      doc.text(`Snapshot data as of ${snapshotStamp || 'unknown'}. Not live; prices and impressions are estimates.`, 14, H - 7);
+      doc.text(dataFreshnessLine(), 14, H - 7);
       doc.text(`Page ${doc.internal.getNumberOfPages()}`, W - 14, H - 7, { align: 'right' });
     },
     margin: { left: 14, right: 14, bottom: 14 },
