@@ -280,6 +280,63 @@ def cities(_: None = Depends(require_auth)):
     return {"cities": rows}
 
 
+def _search_text(b: Billboard) -> str:
+    return " ".join(
+        filter(
+            None,
+            [
+                str(b.inventory_id),
+                b.inventory_name,
+                b.inventory_address,
+                b.sub_district_name,
+                b.district_name,
+                b.city_name,
+            ],
+        )
+    ).lower()
+
+
+# Precomputed once at startup so each search is a plain substring scan.
+_SEARCH_INDEX = [(_search_text(b), b) for b in ALL_BILLBOARDS]
+
+
+@app.get("/api/search")
+def search(
+    q: str = "",
+    city: Optional[str] = None,
+    display_type: Optional[str] = None,
+    limit: int = 50,
+    _: None = Depends(require_auth),
+):
+    """Free-text billboard search for the custom plan builder.
+
+    Every whitespace-separated word in `q` must appear somewhere in the
+    billboard's id, name, address, sub-district, district or city, so
+    "menteng atas" and "atas menteng" both match. Billboards containing the
+    exact phrase come first, then the rest; each group cheapest CPM first.
+    """
+    words = q.lower().split()
+    city_key = city.strip().lower() if city else None
+    limit = max(1, min(limit, 200))
+
+    phrase = " ".join(words)
+
+    matches = [
+        (phrase in text, b)
+        for text, b in _SEARCH_INDEX
+        if all(w in text for w in words)
+        and (not city_key or b.city_name.strip().lower() == city_key)
+        and (not display_type or b.display_type_name == display_type)
+    ]
+    # exact-phrase hits first, then cheapest CPM
+    matches.sort(key=lambda m: (not m[0], m[1].cpm_calculated is None, m[1].cpm_calculated or 0.0))
+    matches = [b for _, b in matches]
+    return {
+        "total": len(matches),
+        "results": [b.__dict__ for b in matches[:limit]],
+    }
+
+
 @app.post("/api/calculate")
 def calculate(req: CalcRequest, _: None = Depends(require_auth)):
     if req.min_billboards < 1 or req.max_billboards < req.min_billboards:
