@@ -6,7 +6,7 @@
 <title>Billboard Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="/static/app.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -20,8 +20,8 @@
     </a>
     <nav class="tabs" role="tablist">
       <button class="tab active" type="button" data-tab="planner" role="tab">Planner</button>
-      <button class="tab" type="button" data-tab="custom" role="tab">Custom plan <span class="count" id="tabCount">0</span></button>
-      <button class="tab" type="button" data-tab="saved" role="tab">Saved plans <span class="count" id="savedCount">0</span></button>
+      <button class="tab" type="button" data-tab="custom" role="tab"><span>Custom<span class="long"> plan</span></span> <span class="count" id="tabCount">0</span></button>
+      <button class="tab" type="button" data-tab="saved" role="tab"><span>Saved<span class="long"> plans</span></span> <span class="count" id="savedCount">0</span></button>
       <button class="tab" type="button" data-tab="market" role="tab">Market</button>
     </nav>
     <span class="data-badge" id="dataBadge" title="Loading data details…"><span class="dot"></span><span id="dataBadgeText">Loading data…</span></span>
@@ -33,114 +33,110 @@
     <div class="page-head">
       <div>
         <h1>Campaign planner</h1>
-        <p>Find the most efficient billboard mix for a budget, an impression goal, or both.</p>
+        <p>Choose where to advertise and what you want to achieve. The planner picks the billboards with the lowest cost per thousand impressions.</p>
       </div>
     </div>
 
-    <div class="planner">
+    <div class="setup">
       <aside class="card settings">
-        <div class="card-head"><div><h2>Campaign settings</h2></div></div>
         <form id="f">
-          <div class="form-section">
-            <span class="eyebrow">Market</span>
-            <div class="form-grid">
-              <div class="field full">
-                <label for="city">City</label>
-                <select id="city"><option>Loading…</option></select>
+          <div class="settings-body">
+            <div class="form-section">
+              <div class="section-title"><span class="step">1</span>Where</div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="city">City</label>
+                  <select id="city"><option>Loading…</option></select>
+                </div>
+                <div class="field full">
+                  <label for="distPick">Districts</label>
+                  <div class="chips" id="distChips"></div>
+                  <select id="distPick"><option value="">All districts</option></select>
+                </div>
+                <div class="field">
+                  <label for="near">Near a place</label>
+                  <input id="near" type="search" placeholder="e.g. sudirman" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="radius">Radius</label>
+                  <div class="input-group"><input id="radius" type="number" min="0.1" max="50" step="any" value="2"><span class="affix end">km</span></div>
+                </div>
+                <div class="hint full" id="nearHint">Anywhere in the city</div>
               </div>
-              <div class="field">
-                <label for="dtype">Format</label>
-                <select id="dtype">
-                  <option value="">All formats</option>
-                  <option value="OOH">OOH</option>
-                  <option value="DOOH">DOOH</option>
-                </select>
+            </div>
+
+            <div class="form-section">
+              <div class="section-title"><span class="step">2</span>Inventory</div>
+              <div class="form-grid three">
+                <div class="field full">
+                  <span class="label">Format</span>
+                  <select id="dtype">
+                    <option value="">All formats</option>
+                    <option value="OOH">OOH</option>
+                    <option value="DOOH">DOOH</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="minb">Min boards</label>
+                  <input id="minb" type="number" min="1" max="6" value="1">
+                </div>
+                <div class="field">
+                  <label for="maxb">Max boards</label>
+                  <input id="maxb" type="number" min="1" max="6" value="3">
+                </div>
+                <div class="field">
+                  <label for="months">Months</label>
+                  <input id="months" type="number" min="1" max="24" value="3">
+                </div>
               </div>
-              <div class="field">
-                <label for="months">Duration</label>
-                <div class="input-group"><input id="months" type="number" min="1" max="24" value="3"><span class="affix end">months</span></div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-title"><span class="step">3</span>Goal</div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="budget">Budget</label>
+                  <div class="input-group"><span class="affix">Rp</span><input id="budget" class="amount" type="text" inputmode="numeric" placeholder="No limit" autocomplete="off"></div>
+                  <div class="quick" id="budgetQuick" aria-label="Quick budgets">
+                    <button type="button" data-v="50000000">50M</button>
+                    <button type="button" data-v="100000000">100M</button>
+                    <button type="button" data-v="250000000">250M</button>
+                    <button type="button" data-v="500000000">500M</button>
+                    <button type="button" data-v="1000000000">1B</button>
+                  </div>
+                  <div class="hint" id="budgetHint"></div>
+                </div>
+                <div class="field full">
+                  <label for="target">Impression target</label>
+                  <div class="input-group"><input id="target" class="amount" type="text" inputmode="numeric" placeholder="No target" autocomplete="off"><span class="affix end">impressions</span></div>
+                  <div class="hint" id="targetHint"></div>
+                </div>
               </div>
             </div>
           </div>
-
-          <div class="form-section">
-            <span class="eyebrow">Area</span>
-            <div class="form-grid">
-              <div class="field full">
-                <label for="distPick">Districts</label>
-                <div class="chips" id="distChips"></div>
-                <select id="distPick"><option value="">All districts</option></select>
-              </div>
-              <div class="field">
-                <label for="near">Near a place</label>
-                <input id="near" type="search" placeholder="e.g. sudirman" autocomplete="off">
-              </div>
-              <div class="field">
-                <label for="radius">Radius</label>
-                <div class="input-group"><input id="radius" type="number" min="0.1" max="50" step="any" value="2"><span class="affix end">km</span></div>
-              </div>
-              <div class="hint full" id="nearHint" style="margin-top:-6px">Anywhere in the city</div>
-            </div>
+          <div class="settings-foot">
+            <button id="go" class="btn primary lg block" type="submit">Calculate plans</button>
           </div>
-
-          <div class="form-section">
-            <span class="eyebrow">Plan size</span>
-            <div class="form-grid">
-              <div class="field">
-                <label for="minb">Min billboards</label>
-                <input id="minb" type="number" min="1" max="6" value="1">
-              </div>
-              <div class="field">
-                <label for="maxb">Max billboards</label>
-                <input id="maxb" type="number" min="1" max="6" value="3">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <span class="eyebrow">Goal</span>
-            <div class="form-grid">
-              <div class="field full">
-                <label for="budget">Budget</label>
-                <div class="input-group"><span class="affix">Rp</span><input id="budget" type="number" min="0" step="1000000" placeholder="No limit"></div>
-                <div class="hint" id="budgetHint">No limit</div>
-              </div>
-              <div class="field full">
-                <label for="target">Impression target</label>
-                <input id="target" type="number" min="0" step="100000" placeholder="No target">
-                <div class="hint" id="targetHint">No target</div>
-              </div>
-            </div>
-          </div>
-
-          <button id="go" class="btn primary lg block submit" type="submit">Calculate</button>
-          <p class="help">
-            Leave the budget blank to find the cheapest set that hits your impression target.
-            Leave the target blank to spend the budget on the most efficient billboards.
-            Set both to fit the target within a budget cap.
-          </p>
         </form>
       </aside>
 
-      <div class="planner-main">
-        <section class="card map-card">
-          <div class="card-head">
-            <div><h3>Inventory map</h3></div>
-            <span class="sp"></span>
-            <span class="heat-note" id="heatNote"></span>
-            <label class="switch"><input type="checkbox" id="heatToggle"><span class="track"></span>CPM heatmap</label>
-          </div>
-          <div id="plannerMap" class="map"></div>
-          <div class="map-note" id="plannerMapNote">Grey dots are every billboard in the city. Click the map to plan around that spot.</div>
-        </section>
-
-        <div id="out">
-          <div class="card empty-state">
-            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></div>
-            <h3>Your plans will appear here</h3>
-            <p>Pick a city, set a budget or impression target, and press Calculate to see the best billboard combinations.</p>
-          </div>
+      <section class="card map-card">
+        <div class="card-head">
+          <div><h3>Inventory map</h3></div>
+          <span class="sp"></span>
+          <span class="heat-note" id="heatNote"></span>
+          <label class="switch"><input type="checkbox" id="heatToggle"><span class="track"></span>CPM heatmap</label>
         </div>
+        <div id="plannerMap" class="map"></div>
+        <div class="map-note" id="plannerMapNote">Grey dots are every billboard in the city. Click the map to plan around that spot.</div>
+      </section>
+    </div>
+
+    <div id="out" class="results">
+      <div class="card empty-state">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></div>
+        <h3>Your plan options will appear here</h3>
+        <p>Pick where to advertise, set a budget or an impression target, then press Calculate plans.</p>
       </div>
     </div>
   </div>
@@ -168,8 +164,8 @@
               <label for="qcity">City</label>
               <select id="qcity"><option value="">All cities</option></select>
             </div>
-            <div class="field">
-              <label for="qtype">Format</label>
+            <div class="field seg-field">
+              <span class="label">Format</span>
               <select id="qtype">
                 <option value="">All formats</option>
                 <option value="OOH">OOH</option>
@@ -193,14 +189,15 @@
             </div>
             <div class="field">
               <label for="cbudget">Budget</label>
-              <div class="input-group"><span class="affix">Rp</span><input id="cbudget" type="number" min="0" step="1000000" placeholder="No limit"></div>
+              <div class="input-group"><span class="affix">Rp</span><input id="cbudget" class="amount" type="text" inputmode="numeric" placeholder="No limit" autocomplete="off"></div>
             </div>
             <div class="field">
               <label for="ctarget">Impression target</label>
-              <input id="ctarget" type="number" min="0" step="100000" placeholder="No target">
+              <input id="ctarget" class="amount" type="text" inputmode="numeric" placeholder="No target" autocomplete="off">
             </div>
           </div>
           <div class="totals" id="totals"></div>
+          <div class="meters" id="totalsMeters"></div>
           <div class="toolbar">
             <button class="btn primary" type="button" id="saveCustom">Save plan</button>
             <button class="btn" type="button" id="sortCpm">Sort by CPM</button>
@@ -260,9 +257,9 @@
         <h2 class="crumbs" id="mkCrumbs">All cities</h2>
         <span class="sp"></span>
         <input id="mkFilter" class="search-input" type="search" placeholder="Filter by name" autocomplete="off">
-        <label class="inline-field">Format
+        <div class="inline-field">Format
           <select id="mkType"><option value="">All</option><option value="OOH">OOH</option><option value="DOOH">DOOH</option></select>
-        </label>
+        </div>
       </div>
       <div class="overview" id="mkOverview"></div>
       <div class="scroll" id="mkTable"></div>
@@ -350,10 +347,87 @@ function makeMap(el) {
 }
 const numIcon = n => L.divIcon({ className: 'pin-num', html: String(n), iconSize: null });
 
-$('budget').addEventListener('input', e =>
-  $('budgetHint').textContent = e.target.value === '' ? 'No limit' : rp(+e.target.value));
-$('target').addEventListener('input', e =>
-  $('targetHint').textContent = e.target.value === '' ? 'No target' : num(+e.target.value));
+// ---- amounts: budget and impression inputs show thousands separators;
+// code reads the plain digits back with numVal()
+const digits = v => String(v ?? '').replace(/\D/g, '');
+// plain numbers (including values saved by older versions) are rounded, anything else keeps its digits
+const amountDigits = v => typeof v === 'number' || /^\d+(\.\d+)?$/.test(String(v ?? '').trim())
+  ? (+v > 0 ? String(Math.round(+v)) : '') : digits(v);
+const numVal = id => digits($(id).value);
+function setNum(id, v) {
+  const d = amountDigits(v);
+  $(id).value = d ? Number(d).toLocaleString('en-US') : '';
+}
+document.querySelectorAll('input.amount').forEach(el => el.addEventListener('input', () => {
+  const caretDigits = digits(el.value.slice(0, el.selectionStart ?? el.value.length)).length;
+  const d = digits(el.value).replace(/^0+(?=\d)/, '');
+  el.value = d ? Number(d).toLocaleString('en-US') : '';
+  let pos = 0;
+  for (let seen = 0; pos < el.value.length && seen < caretDigits; pos++) if (/\d/.test(el.value[pos])) seen++;
+  try { el.setSelectionRange(pos, pos); } catch (_) {}
+}));
+
+// ---- goal hints and quick budgets
+function updateGoalHints() {
+  const months = Math.max(1, +$('months').value || 1);
+  const b = +numVal('budget'), t = +numVal('target');
+  $('budgetHint').textContent = b
+    ? `About ${rpShort(b / months)} per month over ${plural(months, 'month')}.`
+    : t ? 'No limit: the planner finds the cheapest way to reach your target.' : 'No limit.';
+  $('targetHint').textContent = t
+    ? `About ${short(t / months)} impressions per month.`
+    : b ? 'No target: the planner spends the budget on the lowest-CPM boards.'
+        : 'No target: the planner picks the lowest-CPM boards, up to Max boards.';
+  document.querySelectorAll('#budgetQuick [data-v]').forEach(x => x.classList.toggle('on', +x.dataset.v === b));
+}
+['budget', 'target', 'months'].forEach(id => $(id).addEventListener('input', updateGoalHints));
+$('budgetQuick').addEventListener('click', e => {
+  const btn = e.target.closest('[data-v]');
+  if (!btn) return;
+  setNum('budget', btn.dataset.v);
+  updateGoalHints();
+});
+
+// ---- segmented controls: a row of buttons standing in for a small <select>,
+// which stays in the page (hidden) so the rest of the code keeps reading its value
+function segmented(id) {
+  const sel = $(id), seg = document.createElement('div');
+  seg.className = 'seg';
+  seg.setAttribute('role', 'radiogroup');
+  seg.innerHTML = [...sel.options].map(o =>
+    `<button type="button" role="radio" data-v="${esc(o.value)}">${esc(o.textContent)}</button>`).join('');
+  sel.hidden = true;
+  sel.after(seg);
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('[data-v]');
+    if (!b || b.dataset.v === sel.value) return;
+    sel.value = b.dataset.v;
+    syncSeg(id);
+    sel.dispatchEvent(new Event('input', { bubbles: true }));
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  syncSeg(id);
+}
+function syncSeg(id) {
+  const sel = $(id), seg = sel.nextElementSibling;
+  if (seg && seg.classList.contains('seg'))
+    seg.querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === sel.value)));
+}
+
+// Leaflet only notices window resizes; this keeps a map right when its own box changes size
+function watchSize(map, el) {
+  if (!map || !window.ResizeObserver) return;
+  const ro = new ResizeObserver(() => { if (el.isConnected) map.invalidateSize(); });
+  ro.observe(el);
+  map.on('unload', () => ro.disconnect());
+}
+
+// a labelled progress bar: budget used, or share of the impression target
+const meter = (label, pct, kind = '') => pct == null || !isFinite(pct) ? '' : `
+  <span class="meter ${kind}"><span class="meter-k"><span>${label}</span><b>${Math.round(pct)}%</b></span>
+    <span class="meter-bar"><i style="width:${Math.max(2, Math.min(100, pct))}%"></i></span></span>`;
+const budgetMeter = pct => meter(pct > 100 ? 'Over budget' : 'Budget used', pct, pct > 100 ? 'over' : '');
+const targetMeter = pct => meter(pct >= 100 ? 'Target reached' : 'Of impression target', pct, pct >= 100 ? 'ok' : 'warn');
 
 // ---- snapshot freshness banner
 fetch('/api/meta').then(r => r.json()).then(d => {
@@ -394,17 +468,25 @@ fetch('/api/cities').then(r => r.json()).then(d => {
 });
 
 // ---- calculate
+let selectedPlan = 0, planMap = null, planMapLayer = null;
+const SKELETON = `
+  <div class="results-head"><div><span class="eyebrow">Results</span><h2>Finding the best plans…</h2></div></div>
+  <div class="options">${'<span class="option skeleton"></span>'.repeat(3)}</div>
+  <div class="card skeleton tall"></div>`;
+
 $('f').addEventListener('submit', async e => {
   e.preventDefault();
   $('go').disabled = true; $('go').textContent = 'Calculating…';
+  if (planMap) { planMap.remove(); planMap = null; planMapLayer = null; }
+  $('out').innerHTML = SKELETON;
   try {
     const body = JSON.stringify({
       city: $('city').value,
       min_billboards: +$('minb').value,
       max_billboards: +$('maxb').value,
-      budget: $('budget').value === '' ? null : +$('budget').value,
+      budget: numVal('budget') === '' ? null : +numVal('budget'),
       months: +$('months').value,
-      impression_target: $('target').value === '' ? 0 : +$('target').value,
+      impression_target: numVal('target') === '' ? 0 : +numVal('target'),
       display_type: $('dtype').value || null,
       area: areaPayload(),
     });
@@ -413,100 +495,193 @@ $('f').addEventListener('submit', async e => {
     });
     lastPlanner = {
       data: await res.json(), months: +$('months').value,
-      budget: $('budget').value, target: $('target').value, city: $('city').value,
+      budget: numVal('budget'), target: numVal('target'), city: $('city').value, dtype: $('dtype').value,
     };
     lastPlanner.areaLabel = areaLabel();
     render(lastPlanner.data, lastPlanner.months);
     drawPlannerPlan(lastPlanner.data);
     if (!lastPlanner.data.error) loadCurve(body);
   } catch (err) {
-    $('out').innerHTML = `<div class="msg warn">${err}</div>`;
+    $('out').innerHTML = `<div class="msg warn">${esc(err)}</div>`;
   } finally {
-    $('go').disabled = false; $('go').textContent = 'Calculate';
+    $('go').disabled = false; $('go').textContent = 'Calculate plans';
+    $('out').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
 
-function boardRows(boards, months) {
-  return boards.map(b => `
+// ---- results
+function whereHtml(b) {
+  const place = [b.sub_district_name, b.district_name, b.city_name].filter(Boolean).map(esc).join(' · ');
+  return `<div class="where">${place}</div>` + (b.inventory_address
+    ? `<div class="addr" title="${esc(b.inventory_address)}">${esc(b.inventory_address)}</div>` : '');
+}
+
+const HEAD = months => `<thead><tr>
+  <th>Billboard</th><th class="num">CPM</th><th class="num">Price / mo</th>
+  <th class="num">Total (${months} mo)</th><th class="num">Impr / mo</th><th class="num">Total impr</th>
+</tr></thead>`;
+
+function boardRows(boards, months, numbered = false) {
+  return boards.map((b, i) => `
     <tr>
-      <td><div class="bbrow">
+      <td class="cell-board"><div class="bbrow">
         ${thumb(b)}
-        <div>
-          <div class="name">${esc(b.inventory_name) || '—'}</div>
-          <div class="where">${where(b)}</div>
+        <div class="bb-info">
+          <div class="name">${numbered ? `<span class="num-badge">${i + 1}</span>` : ''}${esc(b.inventory_name) || '—'}</div>
+          ${whereHtml(b)}
           <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
         </div>
       </div></td>
-      <td class="num">${cpm(b.cpm_calculated)}</td>
-      <td class="num">${rp(b.monthly_price)}</td>
-      <td class="num">${rp(b.monthly_price * months)}</td>
-      <td class="num">
-        ${num(b.monthly_impression)}
-        ${b.monthly_impression_source === 'estimated_reach_daily_x30'
-          ? '<div class="est">reach×30 est.</div>' : ''}
-      </td>
-      <td class="num">${num(b.monthly_impression * months)}</td>
+      <td class="num" data-label="CPM"><b>${cpm(b.cpm_calculated)}</b></td>
+      <td class="num" data-label="Price / mo">${rp(b.monthly_price)}</td>
+      <td class="num" data-label="Total (${months} mo)">${rp(b.monthly_price * months)}</td>
+      <td class="num" data-label="Impr / mo">${num(b.monthly_impression)}${
+        b.monthly_impression_source === 'estimated_reach_daily_x30' ? '<div class="est">reach×30 est.</div>' : ''}</td>
+      <td class="num" data-label="Total impr">${num(b.monthly_impression * months)}</td>
     </tr>`).join('');
 }
 
-const HEAD = `<thead><tr>
-  <th>Billboard</th><th class="num">CPM</th><th class="num">Price / mo</th>
-  <th class="num">Total</th><th class="num">Impr / mo</th><th class="num">Total impr</th>
-</tr></thead>`;
+function boardFoot(boards, months) {
+  const price = boards.reduce((s, b) => s + b.monthly_price, 0);
+  const impr = boards.reduce((s, b) => s + b.monthly_impression, 0);
+  return `<tfoot><tr>
+    <td class="cell-board">Total <span class="muted">· ${plural(boards.length, 'billboard')}</span></td>
+    <td class="num" data-label="Blended CPM">${cpm(impr > 0 ? price / (impr / 1000) : null)}</td>
+    <td class="num" data-label="Price / mo">${rp(price)}</td>
+    <td class="num" data-label="Total (${months} mo)">${rp(price * months)}</td>
+    <td class="num" data-label="Impr / mo">${num(impr)}</td>
+    <td class="num" data-label="Total impr">${num(impr * months)}</td>
+  </tr></tfoot>`;
+}
+
+function resultsContext() {
+  const P = lastPlanner;
+  return [P.city, P.areaLabel, plural(P.months, 'month'), P.dtype || 'All formats',
+    +P.budget ? 'Budget ' + rp(+P.budget) : 'No budget limit',
+    +P.target ? 'Target ' + num(+P.target) + ' impressions' : null]
+    .filter(Boolean).map(esc).join(' · ');
+}
+
+function optionCard(p, i) {
+  return `<button type="button" class="option ${p.recommended ? 'rec' : ''} ${i === selectedPlan ? 'on' : ''}"
+      data-option="${i}" aria-pressed="${i === selectedPlan}">
+    <span class="option-top"><span class="option-name">${plural(p.billboard_count, 'billboard')}</span>
+      ${p.recommended ? '<span class="pill accent">★ Recommended</span>' : ''}</span>
+    <span class="option-cost">${rp(p.total_cost)}</span>
+    <span class="option-meta"><span><b>${short(p.total_impression)}</b> impressions</span><span>CPM <b>${cpm(p.blended_cpm)}</b></span></span>
+    ${budgetMeter(p.budget_used_pct)}${targetMeter(p.impression_vs_target_pct)}
+  </button>`;
+}
+
+function planDetailHtml(i) {
+  const p = lastPlanner.data.plans[i], months = lastPlanner.months;
+  return `<article class="plan ${p.recommended ? 'best' : ''}">
+    <div class="plan-head">
+      <div class="plan-title">
+        ${p.recommended ? '<span class="pill accent">★ Recommended</span>' : ''}
+        <h3>${plural(p.billboard_count, 'billboard')} <span class="muted">for ${plural(months, 'month')}</span></h3>
+        ${p.impression_vs_target_pct != null
+          ? `<span class="pill ${p.meets_impression_target ? 'ok' : 'warn'}">${p.meets_impression_target
+              ? '✓ Hits target' : Math.round(p.impression_vs_target_pct) + '% of target'}</span>` : ''}
+        <div class="plan-actions">
+          <button class="btn primary" type="button" data-customize="${i}">Customize this plan</button>
+          <button class="btn" type="button" data-saveplan="${i}">Save plan</button>
+          <button class="btn" type="button" data-xls="${i}">Excel</button>
+          <button class="btn" type="button" data-pdf="${i}">PDF</button>
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="stat"><div class="k">Total cost</div><div class="v">${rp(p.total_cost)}</div></div>
+        <div class="stat"><div class="k">Per month</div><div class="v">${rp(p.total_cost / months)}</div></div>
+        <div class="stat"><div class="k">Impressions</div><div class="v">${num(p.total_impression)}</div></div>
+        <div class="stat"><div class="k">Blended CPM</div><div class="v">${cpm(p.blended_cpm)}</div></div>
+        ${p.budget_remaining != null
+          ? `<div class="stat ${p.budget_remaining < 0 ? 'neg' : ''}"><div class="k">Budget left</div><div class="v">${rp(p.budget_remaining)}</div></div>`
+          : ''}
+      </div>
+    </div>
+    <div class="scroll"><table class="boards">${HEAD(months)}<tbody>
+      ${boardRows(p.billboards, months, true)}
+    </tbody>${boardFoot(p.billboards, months)}</table></div>
+  </article>`;
+}
 
 function render(d, months) {
-  if (d.error) { $('out').innerHTML = `<div class="msg warn">${d.error}</div>`; return; }
+  if (planMap) { planMap.remove(); planMap = null; planMapLayer = null; }
+  if (d.error) { $('out').innerHTML = `<div class="msg warn">${esc(d.error)}</div>`; return; }
+  const plans = d.plans || [];
+  selectedPlan = Math.max(0, plans.findIndex(p => p.recommended));
 
-  const cls = d.feasible_count > 0 ? 'ok' : 'warn';
-  let html = `<div class="msg ${cls}">${esc(d.message)}</div><div id="curveOut"></div>`;
-
-  html += d.plans.map((p, i) => `
-    <article class="plan ${p.recommended ? 'best' : ''}">
-      <div class="plan-head">
-        <div class="plan-title">
-          ${p.recommended ? '<span class="pill accent">★ Recommended</span>' : ''}
-          <span class="rank">${plural(p.billboard_count, 'billboard')} · ${months} month${months === 1 ? '' : 's'}</span>
-          <span class="sp"></span>
-          ${p.impression_vs_target_pct != null
-            ? `<span class="pill ${p.meets_impression_target ? 'ok' : 'warn'}">
-                 ${p.meets_impression_target ? '✓ Hits target'
-                   : `${Math.round(p.impression_vs_target_pct)}% of target`}
-               </span>`
-            : ''}
-        </div>
-        <div class="kpis">
-          <div class="stat"><div class="k">Total cost</div><div class="v">${rp(p.total_cost)}</div></div>
-          <div class="stat"><div class="k">Impressions</div><div class="v">${num(p.total_impression)}</div></div>
-          <div class="stat"><div class="k">Blended CPM</div><div class="v">${cpm(p.blended_cpm)}</div></div>
-          ${p.budget_remaining != null
-            ? `<div class="stat ${p.budget_remaining < 0 ? 'neg' : ''}"><div class="k">Budget left</div><div class="v">${rp(p.budget_remaining)}</div></div>`
-            : ''}
-        </div>
+  let html = `
+    <div class="results-head">
+      <div>
+        <span class="eyebrow">Results</span>
+        <h2>${plans.length ? plural(plans.length, 'plan option') : 'No plan fits these settings'}</h2>
+        <p class="sub">${resultsContext()}</p>
       </div>
-      <div class="scroll"><table>${HEAD}<tbody>
-        ${boardRows(p.billboards, months)}
-      </tbody></table></div>
-      <div class="plan-actions">
-        <button class="btn primary" type="button" data-customize="${i}">Customize this plan</button>
-        <button class="btn" type="button" data-saveplan="${i}">Save plan</button>
-        <span class="sp"></span>
-        <button class="btn" type="button" data-xls="${i}">Excel</button>
-        <button class="btn" type="button" data-pdf="${i}">PDF</button>
-      </div>
-    </article>`).join('');
-
-  if (d.candidates.length) {
-    html += `<div class="card flush"><details>
-      <summary>All ${num(d.candidate_count)} candidate billboards
-        <span class="muted" style="font-weight:500">· showing ${d.candidates.length}, cheapest CPM first</span></summary>
-      <div class="scroll"><table>${HEAD}<tbody>
+      <span class="sp"></span>
+      <button class="btn sm" type="button" data-edit-settings>Edit settings</button>
+    </div>
+    <div class="msg ${d.feasible_count > 0 ? 'ok' : 'warn'}">${esc(d.message)}</div>`;
+  if (plans.length) html += `
+    <div class="options" id="options">${plans.map(optionCard).join('')}</div>
+    <div id="planDetail">${planDetailHtml(selectedPlan)}</div>`;
+  html += `
+    <div class="results-grid">
+      <div id="curveOut"></div>
+      ${plans.length ? `<section class="card map-card plan-map-card">
+        <div class="card-head"><div><h3>Selected plan on the map</h3>
+          <p class="sub">Numbers match the rows in the plan above.</p></div></div>
+        <div id="planMap" class="map"></div>
+      </section>` : ''}
+    </div>`;
+  if (d.candidates && d.candidates.length) html += `
+    <div class="card flush candidates"><details>
+      <summary><span>All ${num(d.candidate_count)} candidate billboards
+        <span class="muted" style="font-weight:500">· showing ${d.candidates.length}, cheapest CPM first</span></span></summary>
+      <div class="scroll"><table class="boards">${HEAD(months)}<tbody>
         ${boardRows(d.candidates, months)}
       </tbody></table></div>
     </details></div>`;
-  }
 
   $('out').innerHTML = html;
+  if (plans.length) {
+    planMap = makeMap($('planMap'));
+    watchSize(planMap, $('planMap'));
+    drawPlanMap();
+  }
 }
+
+function drawPlanMap() {
+  if (!planMap || !lastPlanner) return;
+  if (planMapLayer) planMapLayer.remove();
+  const p = (lastPlanner.data.plans || [])[selectedPlan];
+  const boards = p ? p.billboards.map((b, i) => [b, i]).filter(([b]) => hasPos(b)) : [];
+  planMapLayer = L.layerGroup(boards.map(([b, i]) =>
+    L.marker([b.latitude, b.longitude], { icon: numIcon(i + 1) })
+      .bindTooltip(`${i + 1}. ${esc(b.inventory_name)}`))).addTo(planMap);
+  if (boards.length)
+    planMap.fitBounds(L.latLngBounds(boards.map(([b]) => [b.latitude, b.longitude])).pad(0.35), { maxZoom: 15 });
+}
+
+// pick another plan option, or jump back to the settings
+$('out').addEventListener('click', e => {
+  if (e.target.closest('[data-edit-settings]')) {
+    $('tab-planner').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  const opt = e.target.closest('[data-option]');
+  if (!opt || !lastPlanner) return;
+  selectedPlan = +opt.dataset.option;
+  $('options').querySelectorAll('[data-option]').forEach(x => {
+    const on = +x.dataset.option === selectedPlan;
+    x.classList.toggle('on', on);
+    x.setAttribute('aria-pressed', String(on));
+  });
+  $('planDetail').innerHTML = planDetailHtml(selectedPlan);
+  drawPlanMap();
+  drawPlannerPlan(lastPlanner.data);
+});
 
 // =================================================================
 // Custom plan builder
@@ -546,8 +721,8 @@ $('out').addEventListener('click', e => {
   custom.savedId = null;
   custom.source = `Started from the ${p.recommended ? 'recommended' : p.billboard_count + '-billboard'} plan for ${lastPlanner.city}.`;
   $('cmonths').value = lastPlanner.months;
-  $('cbudget').value = lastPlanner.budget;
-  $('ctarget').value = lastPlanner.target;
+  setNum('cbudget', lastPlanner.budget);
+  setNum('ctarget', lastPlanner.target);
   if (!$('q').value && !$('qcity').value) { $('qcity').value = lastPlanner.city; searchResults = []; }
   saveCustom(); renderCustom(); showTab('custom');
 });
@@ -567,7 +742,7 @@ function saveCustom() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
       boards: custom.boards, source: custom.source, savedId: custom.savedId,
-      months: $('cmonths').value, budget: $('cbudget').value, target: $('ctarget').value,
+      months: $('cmonths').value, budget: numVal('cbudget'), target: numVal('ctarget'),
     }));
   } catch (_) {}
 }
@@ -579,8 +754,8 @@ function loadCustom() {
     custom.source = s.source || '';
     custom.savedId = s.savedId || null;
     if (s.months) $('cmonths').value = s.months;
-    $('cbudget').value = s.budget || '';
-    $('ctarget').value = s.target || '';
+    setNum('cbudget', s.budget || '');
+    setNum('ctarget', s.target || '');
   } catch (_) {}
 }
 
@@ -623,10 +798,6 @@ async function runSearch() {
 }
 
 // ---- rendering
-function where(b) {
-  return [b.inventory_address, b.sub_district_name, b.district_name, b.city_name]
-    .filter(Boolean).map(esc).join(' · ');
-}
 function tags(b) {
   return [b.display_type_name, b.lighting_type, b.venue_type].filter(Boolean)
     .map(t => `<span class="tag">${esc(t)}</span>`).join('');
@@ -645,7 +816,7 @@ function renderResults() {
       ${thumb(b)}
       <div class="body">
         <div class="name">${esc(b.inventory_name) || '—'}</div>
-        <div class="where">${where(b)}</div>
+        ${whereHtml(b)}
         <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
         <div class="nums">
           <div><span>CPM</span> <b>${cpm(b.cpm_calculated)}</b></div>
@@ -663,8 +834,8 @@ function renderResults() {
 
 function renderCustom() {
   const months = Math.max(1, +$('cmonths').value || 1);
-  const budget = +$('cbudget').value || 0;
-  const target = +$('ctarget').value || 0;
+  const budget = +numVal('cbudget') || 0;
+  const target = +numVal('ctarget') || 0;
   const cost = custom.boards.reduce((s, b) => s + b.monthly_price * months, 0);
   const impr = custom.boards.reduce((s, b) => s + b.monthly_impression * months, 0);
   const blended = impr > 0 ? cost / (impr / 1000) : null;
@@ -682,12 +853,9 @@ function renderCustom() {
     const left = budget - cost;
     t += `<div class="stat ${left < 0 ? 'neg' : ''}"><div class="k">Budget left</div><div class="v">${rp(left)}</div></div>`;
   }
-  if (target > 0 && custom.boards.length) {
-    const ok = impr >= target;
-    t += `<div class="pill ${ok ? 'ok' : 'warn'}">${ok ? '✓ Hits target' : Math.round(impr / target * 100) + '% of target'}</div>`;
-  }
-  if (budget > 0 && cost > budget) t += `<div class="pill warn">Over budget</div>`;
   $('totals').innerHTML = t;
+  $('totalsMeters').innerHTML = custom.boards.length
+    ? (budget > 0 ? budgetMeter(cost / budget * 100) : '') + (target > 0 ? targetMeter(impr / target * 100) : '') : '';
 
   $('drop').innerHTML = !custom.boards.length
     ? '<div class="empty"><b style="color:var(--ink)">Your plan is empty</b><br>Drag billboards here, or tap <b>+ Add</b> on a search result.</div>'
@@ -696,7 +864,7 @@ function renderCustom() {
         ${thumb(b, 'lg')}
         <div class="body">
           <div class="name"><span class="num-badge">${i + 1}</span>${esc(b.inventory_name) || '—'}</div>
-          <div class="where">${where(b)}</div>
+          ${whereHtml(b)}
           <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
           <div class="nums">
             <div><span>CPM</span> <b>${cpm(b.cpm_calculated)}</b></div>
@@ -763,6 +931,7 @@ $('drop').addEventListener('drop', e => {
 const area = { districts: [], center: null, centerLabel: '' };
 let cityDistricts = [];
 let plannerMap = makeMap($('plannerMap'));
+watchSize(plannerMap, $('plannerMap'));
 let pointsLayer = null, planLayer = null, circle = null, centerMarker = null;
 
 function areaPayload() {
@@ -895,17 +1064,18 @@ async function findNear() {
 function drawPlannerPlan(d) {
   if (!plannerMap) return;
   if (planLayer) planLayer.remove();
-  const p = (d.plans || []).find(x => x.recommended) || (d.plans || []).slice(-1)[0];
+  const plans = d.plans || [];
+  const p = plans[selectedPlan] || plans.find(x => x.recommended) || plans.slice(-1)[0];
   if (!p) return;
-  const boards = p.billboards.filter(hasPos);
-  planLayer = L.layerGroup(boards.map((b, i) =>
+  const boards = p.billboards.map((b, i) => [b, i]).filter(([b]) => hasPos(b));
+  planLayer = L.layerGroup(boards.map(([b, i]) =>
     L.marker([b.latitude, b.longitude], { icon: numIcon(i + 1) })
       .bindTooltip(`${i + 1}. ${esc(b.inventory_name)}`))).addTo(plannerMap);
   $('plannerMapNote').textContent =
-    'Blue numbers are the recommended plan. Grey dots are every billboard in the city. Click the map to plan around that spot.';
+    'Blue numbers are the selected plan. Grey dots are every billboard in the city. Click the map to plan around that spot.';
   if (boards.length && !area.center) {
-    const b = L.latLngBounds(boards.map(x => [x.latitude, x.longitude]));
-    plannerMap.fitBounds(b.pad(0.4), { maxZoom: 15 });
+    const bb = L.latLngBounds(boards.map(([x]) => [x.latitude, x.longitude]));
+    plannerMap.fitBounds(bb.pad(0.4), { maxZoom: 15 });
   }
 }
 
@@ -983,7 +1153,7 @@ function customExportPlan() {
     title: 'Billboard plan',
     subtitle: custom.source ? 'Custom plan · ' + custom.source.replace(/\.$/, '') : 'Custom plan',
     boards: custom.boards, months: Math.max(1, +$('cmonths').value || 1),
-    budget: +$('cbudget').value || 0, target: +$('ctarget').value || 0,
+    budget: +numVal('cbudget') || 0, target: +numVal('ctarget') || 0,
   };
 }
 
@@ -1330,6 +1500,21 @@ async function loadCurve(body) {
   if (seq !== curveSeq || !$('curveOut')) return;
   if (!d.points || d.points.length < 2) { $('curveOut').innerHTML = ''; return; }
   $('curveOut').innerHTML = curveHtml(d);
+  const wrap = $('curveOut').querySelector('.curve-wrap');
+  // draw at the box's real width, so the labels stay readable on phones and wide screens
+  let drawnW = 0;
+  const draw = () => {
+    const w = Math.round(wrap.clientWidth);
+    if (!w || Math.abs(w - drawnW) < 24) return;
+    drawnW = w;
+    wrap.querySelector('svg')?.remove();
+    wrap.insertAdjacentHTML('afterbegin', curveSvg(d, w));
+  };
+  draw();
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => wrap.isConnected ? draw() : ro.disconnect());
+    ro.observe(wrap);
+  }
   wireCurve(d);
 }
 
@@ -1344,8 +1529,9 @@ function curveSummary(d) {
   return `Impressions keep growing at a similar price per thousand all the way up, from ${cpm(first.blended_cpm)} CPM at the start. ${capped}`;
 }
 
-function curveHtml(d) {
-  const W = 720, H = 250, L0 = 58, R0 = 16, T0 = 14, B0 = 34;
+function curveSvg(d, W) {
+  W = Math.max(280, W);
+  const H = Math.round(Math.min(300, Math.max(220, W * .3))), L0 = 58, R0 = 16, T0 = 14, B0 = 34;
   const pts = d.points;
   const xMax = pts[pts.length - 1].budget, yMax = Math.max(...pts.map(p => p.impressions)) * 1.08 || 1;
   const x = v => L0 + v / xMax * (W - L0 - R0), y = v => H - B0 - v / yMax * (H - T0 - B0);
@@ -1355,31 +1541,37 @@ function curveHtml(d) {
   const ticks = n => Array.from({length: n + 1}, (_, k) => k / n);
   const grid = ticks(4).map(f => `<line class="grid" x1="${L0}" x2="${W - R0}" y1="${y(f * yMax)}" y2="${y(f * yMax)}"/>
       <text class="ax" x="${L0 - 6}" y="${y(f * yMax) + 4}" text-anchor="end">${short(f * yMax)}</text>`).join('');
-  const xt = ticks(5).map(f => `<text class="ax" x="${x(f * xMax)}" y="${H - B0 + 16}" text-anchor="middle">${rpShort(f * xMax)}</text>`).join('');
+  const xt = ticks(W < 520 ? 3 : 5).map(f => `<text class="ax" x="${x(f * xMax)}" y="${H - B0 + 16}"
+      text-anchor="${f === 1 ? 'end' : 'middle'}">${rpShort(f * xMax)}</text>`).join('');
+  // a label to the right of its point, or to the left when it would run off the chart
+  const label = (cls, px, py, text, width) => px + 9 + width > W - R0
+    ? `<text class="ax ${cls}" x="${px - 9}" y="${py}" text-anchor="end">${text}</text>`
+    : `<text class="ax ${cls}" x="${px + 9}" y="${py}">${text}</text>`;
   const user = pts.find(p => p.is_user_budget);
   const knee = d.knee_cost != null ? pts.find(p => p.cost === d.knee_cost) : null;
   const marks = [
     user ? `<line class="budget-line" x1="${x(user.budget)}" x2="${x(user.budget)}" y1="${T0}" y2="${H - B0}" stroke-dasharray="4 4"/>
-            <text class="ax budget-label" x="${x(user.budget) + 5}" y="${T0 + 10}">Your budget</text>` : '',
+            ${label('budget-label', x(user.budget) - 4, T0 + 10, 'Your budget', 70)}` : '',
     knee ? `<circle class="knee" cx="${x(knee.budget)}" cy="${y(knee.impressions)}" r="6" stroke-width="2"/>
-            <text class="ax knee-label" x="${x(knee.budget) + 9}" y="${y(knee.impressions) + 16}">Returns start to drop</text>` : '',
+            ${label('knee-label', x(knee.budget), y(knee.impressions) + 16, 'Returns start to drop', 125)}` : '',
   ].join('');
   const area = `${path} V${y(0)} H${x(pts[0].budget)} Z`;
   const dots = pts.map((p, k) => `<circle class="pt" cx="${x(p.budget)}" cy="${y(p.impressions)}" r="3.5"/>
       <rect data-pt="${k}" x="${x(p.budget) - 12}" y="${T0}" width="24" height="${H - T0 - B0}" fill="transparent"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Impressions bought at each budget">
+      ${grid}${xt}
+      <text class="ax" x="${L0}" y="${H - 2}">Budget (${d.months} month${d.months === 1 ? '' : 's'}) →</text>
+      <path class="area" d="${area}"/>
+      <path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>
+      ${marks}${dots}
+    </svg>`;
+}
+
+function curveHtml(d) {
   return `<div class="card curve-card">
     <div class="card-head"><h3>Budget curve</h3><span class="sp"></span><span class="pill neutral">What each extra rupiah buys</span></div>
     <p>${curveSummary(d)}</p>
-    <div class="curve-wrap">
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Impressions bought at each budget">
-        ${grid}${xt}
-        <text class="ax" x="${L0}" y="${H - 2}">Budget (${d.months} month${d.months === 1 ? '' : 's'}) →</text>
-        <path class="area" d="${area}"/>
-        <path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>
-        ${marks}${dots}
-      </svg>
-      <div class="curve-tip" hidden></div>
-    </div>
+    <div class="curve-wrap"><div class="curve-tip" hidden></div></div>
     <div class="hint">Uses the same city, area, type, months and board limits as your search. Each dot is the most impressions the planner can buy at that budget. Hover for details.</div>
   </div>`;
 }
@@ -1469,7 +1661,7 @@ $('saveCustom').addEventListener('click', async () => {
   if (!ans) return;
   custom.savedId = storePlan({
     name: ans.name, client: ans.client, savedAt: new Date().toISOString(),
-    months: Math.max(1, +$('cmonths').value || 1), budget: +$('cbudget').value || 0, target: +$('ctarget').value || 0,
+    months: Math.max(1, +$('cmonths').value || 1), budget: +numVal('cbudget') || 0, target: +numVal('ctarget') || 0,
     source: custom.source, boards: custom.boards.map(b => ({...b})),
   }, ans.replace ? custom.savedId : null);
   custom.source = `Saved as "${ans.name}" for ${ans.client}.`;
@@ -1498,7 +1690,7 @@ $('out').addEventListener('click', async e => {
 function currentAsPlan() {
   return {
     id: CURRENT, name: 'Current custom plan', client: savedPlans.find(p => p.id === custom.savedId)?.client || '',
-    months: Math.max(1, +$('cmonths').value || 1), budget: +$('cbudget').value || 0, target: +$('ctarget').value || 0,
+    months: Math.max(1, +$('cmonths').value || 1), budget: +numVal('cbudget') || 0, target: +numVal('ctarget') || 0,
     boards: custom.boards,
   };
 }
@@ -1559,7 +1751,7 @@ $('savedList').addEventListener('click', e => {
     custom.boards = p.boards.map(b => ({...b}));
     custom.savedId = p.id;
     custom.source = `Saved plan "${p.name}" for ${p.client}.`;
-    $('cmonths').value = p.months; $('cbudget').value = p.budget || ''; $('ctarget').value = p.target || '';
+    $('cmonths').value = p.months; setNum('cbudget', p.budget || ''); setNum('ctarget', p.target || '');
     saveCustom(); renderCustom(); showTab('custom');
   } else if (del) {
     const p = savedPlans.find(x => x.id === del.dataset.delete);
@@ -1750,7 +1942,7 @@ $('tab-market').addEventListener('click', async e => {
       if (dd && !area.districts.some(x => x.key === dd.key)) area.districts.push(dd);
       renderChips();
     }
-    if ($('mkType').value) $('dtype').value = $('mkType').value;
+    if ($('mkType').value) { $('dtype').value = $('mkType').value; syncSeg('dtype'); }
     showTab('planner');
     $('tab-planner').scrollIntoView({ behavior: 'smooth' });
     return;
@@ -1758,6 +1950,9 @@ $('tab-market').addEventListener('click', async e => {
   const row = e.target.closest('tr.click[data-row]');
   if (row && !market.city) { market.city = row.dataset.row; $('mkFilter').value = ''; loadMarket(); }
 });
+
+['dtype', 'qtype', 'mkType'].forEach(segmented);
+updateGoalHints();
 
 loadSaved();
 openSharedFromHash();
