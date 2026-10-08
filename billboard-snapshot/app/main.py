@@ -81,40 +81,65 @@ LOGIN_PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Billboard Calculator - Sign in</title>
-<style>
-  body {{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-         background:#f6f7f9; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
-  .card {{ background:#fff; border:1px solid #e3e6ea; border-radius:10px; padding:28px;
-           width:280px; box-shadow:0 1px 3px rgba(0,0,0,.06); }}
-  h1 {{ font-size:17px; margin:0 0 18px; }}
-  label {{ display:block; font-size:11px; font-weight:600; color:#6b7280;
-           text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }}
-  input {{ width:100%; padding:8px 10px; margin-bottom:14px; border:1px solid #e3e6ea;
-           border-radius:8px; font-size:14px; box-sizing:border-box; }}
-  button {{ width:100%; padding:9px; border:none; border-radius:8px; background:#1a56db;
-            color:#fff; font-weight:700; cursor:pointer; }}
-  .err {{ color:#b42318; font-size:12.5px; margin:-6px 0 14px; }}
-</style>
+<title>Sign in - Billboard Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <form class="card" method="post" action="/login">
-    <h1>Billboard Calculator</h1>
-    {error_html}
-    <label for="u">Username</label>
-    <input id="u" name="username" autocomplete="username" autofocus>
-    <label for="p">Password</label>
-    <input id="p" name="password" type="password" autocomplete="current-password">
-    <button type="submit">Sign in</button>
-  </form>
+<div class="auth">
+  <section class="auth-brand">
+    <div class="brand">{logo}<span class="brand-name">Billboard Calculator</span></div>
+    <div class="pitch">
+      <h1>Plan outdoor campaigns at the best CPM.</h1>
+      <p>Turn a budget or an impression goal into a billboard plan you can share with clients.</p>
+      <ul>
+        <li><span>1</span>Get the most efficient billboard mix for any city or district.</li>
+        <li><span>2</span>Fine-tune plans by hand, with cheaper swaps suggested nearby.</li>
+        <li><span>3</span>Save, compare and export plans to Excel or PDF.</li>
+      </ul>
+    </div>
+    <small>Prices and impressions are estimates from surveyed inventory.</small>
+  </section>
+  <main class="auth-main">
+    <form class="auth-card" method="post" action="/login">
+      <div class="brand auth-mobile-brand">{logo}<span class="brand-name">Billboard Calculator</span></div>
+      <h2>Sign in</h2>
+      <p class="sub">Use the team login to continue.</p>
+      {error_html}
+      <div class="field">
+        <label for="u">Username</label>
+        <input id="u" name="username" autocomplete="username" autofocus>
+      </div>
+      <div class="field">
+        <label for="p">Password</label>
+        <input id="p" name="password" type="password" autocomplete="current-password">
+      </div>
+      <button class="btn primary lg block" type="submit">Sign in</button>
+    </form>
+  </main>
+</div>
 </body>
 </html>"""
+
+LOGO = (
+    '<span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="11" rx="1.5"/>'
+    '<path d="M8 15v5M16 15v5M7 9.5h6M7 12h3"/></svg></span>'
+)
 
 
 @app.get("/login", response_class=HTMLResponse)
 def login_form(error: Optional[str] = None):
-    error_html = '<div class="err">Incorrect username or password.</div>' if error else ""
-    return LOGIN_PAGE.format(error_html=error_html)
+    error_html = '<div class="err" role="alert">Incorrect username or password.</div>' if error else ""
+    return LOGIN_PAGE.format(error_html=error_html, logo=LOGO)
+
+
+@app.get("/static/app.css")
+def stylesheet():
+    # Public on purpose: the sign-in page uses it too. It holds styles only.
+    return FileResponse(str(BASE_DIR / "static" / "app.css"), media_type="text/css")
 
 
 @app.post("/login")

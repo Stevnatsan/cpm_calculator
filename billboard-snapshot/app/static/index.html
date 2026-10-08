@@ -4,384 +4,174 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Billboard Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/static/app.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<style>
-  :root {
-    --bg: #f6f7f9; --card: #fff; --ink: #16181d; --muted: #6b7280;
-    --line: #e3e6ea; --accent: #1a56db; --ok: #067647; --warn: #b45309;
-    --okbg: #ecfdf3; --warnbg: #fffaeb;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-
-  .card { background: var(--card); border: 1px solid var(--line);
-          border-radius: 10px; padding: 18px; margin-bottom: 18px; }
-
-  /* ---- filter bar: two explicit rows, each field a self-contained chip
-     so wrapping (on narrow screens) never misaligns anything. ---- */
-  form { display: flex; flex-direction: column; gap: 10px; }
-  .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
-
-  .field { flex: 1 1 130px; min-width: 130px; background: #fbfcfd;
-           border: 1px solid var(--line); border-radius: 10px;
-           padding: 7px 14px 8px; display: flex; flex-direction: column;
-           justify-content: center; transition: border-color .15s, background .15s; }
-  .field:focus-within { border-color: var(--accent); background: #fff;
-           box-shadow: 0 0 0 3px rgba(26,86,219,.1); }
-  .field.wide { flex: 1.8 1 260px; min-width: 260px; }
-  .field.narrow { flex: 0.6 1 110px; min-width: 100px; }
-
-  .field label { display: block; font-weight: 600; font-size: 10.5px;
-          color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
-          margin-bottom: 1px; white-space: nowrap; }
-  .field input, .field select { width: 100%; padding: 0; border: none;
-          background: transparent; font-size: 15px; font-weight: 600;
-          color: var(--ink); font-family: inherit; outline: none; }
-  .field input::placeholder { color: #b6bac2; font-weight: 500; }
-  .field .hint { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
-
-  .pair { flex: 1.6 1 260px; min-width: 260px; display: flex;
-          border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-          background: #fbfcfd; }
-  .pair .field { flex: 1 1 0; min-width: 0; border: none; border-radius: 0; background: transparent; }
-  .pair .field + .field { border-left: 1px solid var(--line); }
-  .pair .field:focus-within { box-shadow: none; background: #fff; }
-
-  button#go { flex: 0 0 auto; min-width: 160px; padding: 0 22px;
-          border: none; border-radius: 10px; background: var(--accent);
-          color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
-          transition: background .15s; align-self: stretch; }
-  button#go:hover:not(:disabled) { background: #1546b8; }
-  button#go:disabled { opacity: .55; cursor: default; }
-
-  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
-
-  .msg { padding: 11px 14px; border-radius: 8px; margin-bottom: 18px; font-weight: 500; }
-  .msg.ok   { background: var(--okbg);   color: var(--ok);   border: 1px solid #a9e8c4; }
-  .msg.warn { background: var(--warnbg); color: var(--warn); border: 1px solid #f5d78e; }
-
-  .plan { border: 1px solid var(--line); border-radius: 10px;
-          margin-bottom: 14px; overflow: hidden; background: var(--card); }
-  .plan.best { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(26,86,219,.1); }
-  .plan-head { display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
-               padding: 13px 16px; background: #fbfcfd; border-bottom: 1px solid var(--line); }
-  .rank { font-weight: 700; font-size: 13px; color: var(--accent);
-          min-width: 74px; }
-  .stat { min-width: 108px; }
-  .stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase;
-             letter-spacing: .03em; }
-  .stat .v { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
-  .pill { margin-left: auto; font-size: 12px; font-weight: 700;
-          padding: 4px 10px; border-radius: 999px; }
-  .pill.ok   { background: var(--okbg);   color: var(--ok); }
-  .pill.warn { background: var(--warnbg); color: var(--warn); }
-
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 9px 16px; border-bottom: 1px solid var(--line);
-           font-size: 13px; vertical-align: top; }
-  th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
-       color: var(--muted); font-weight: 600; }
-  tbody tr:last-child td { border-bottom: none; }
-  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .name { font-weight: 600; }
-  .where { color: var(--muted); font-size: 12px; }
-  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 4px;
-         background: #eef1f5; color: #4b5563; margin-right: 4px; }
-  .scroll { overflow-x: auto; }
-  details { margin-top: 6px; }
-  summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
-  .est { color: var(--warn); font-size: 11px; }
-
-  /* ---- tabs */
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
-  .tab { border: none; background: none; padding: 9px 14px; font: inherit; font-weight: 600;
-         color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab .count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px;
-         border-radius: 999px; background: #eef1f5; color: #4b5563; font-size: 11px; text-align: center; }
-  .tab.active .count { background: rgba(26,86,219,.12); color: var(--accent); }
-  [hidden] { display: none !important; }
-
-  .plan-actions { padding: 10px 16px; border-top: 1px solid var(--line); background: #fbfcfd; }
-  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px;
-         padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.primary:hover { background: #1546b8; color: #fff; }
-  .btn:disabled { opacity: .5; cursor: default; border-color: var(--line); color: var(--muted); }
-
-  /* ---- custom plan builder */
-  .builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; align-items: start; }
-  @media (max-width: 820px) { .builder { grid-template-columns: minmax(0, 1fr); } }
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .panel-head { padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fbfcfd; }
-  .panel-head h2 { font-size: 15px; margin: 0 0 10px; }
-  .panel-head .form-row { gap: 8px; }
-  .panel-head .field { flex: 1 1 120px; min-width: 110px; }
-  .panel-head .field.wide { flex: 2 1 200px; min-width: 180px; }
-  .search-meta { font-size: 12px; color: var(--muted); padding: 8px 16px 0; }
-  .list { max-height: 640px; overflow-y: auto; padding: 8px; }
-  .bb { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line);
-        border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: #fff; }
-  .bb[draggable="true"] { cursor: grab; }
-  .bb.dragging { opacity: .45; }
-  .bb.added { background: #fbfcfd; }
-  .bb .body { flex: 1; min-width: 0; }
-  .bb .nums { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 12px;
-              font-variant-numeric: tabular-nums; }
-  .bb .nums b { font-weight: 600; }
-  .bb .nums span { color: var(--muted); }
-  .bb .side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .grip { color: #b6bac2; font-size: 16px; line-height: 1; user-select: none; padding-top: 2px; }
-  .rm { border: none; background: none; color: var(--muted); font-size: 18px; line-height: 1;
-        cursor: pointer; padding: 2px 4px; border-radius: 4px; }
-  .rm:hover { color: #b42318; background: #fef3f2; }
-  .drop { min-height: 180px; padding: 8px; transition: background .15s, box-shadow .15s; }
-  .drop.over { background: #f0f5ff; box-shadow: inset 0 0 0 2px var(--accent); }
-  .empty { color: var(--muted); text-align: center; padding: 40px 16px; border: 2px dashed var(--line);
-           border-radius: 8px; }
-  .totals { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; margin-top: 12px; }
-  .totals .stat { min-width: 96px; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
-  .toolbar .sp { flex: 1; }
-  .source { font-size: 12px; color: var(--muted); }
-
-  /* ---- area targeting */
-  .area-row .field { justify-content: flex-start; }
-  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 2px; }
-  .chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(26,86,219,.1);
-          color: var(--accent); border-radius: 999px; padding: 1px 4px 1px 9px; font-size: 12px; font-weight: 600; }
-  .chip button { border: none; background: none; color: inherit; cursor: pointer; font-size: 14px;
-                 line-height: 1; padding: 0 3px; }
-  .field select.plain { font-size: 13px; font-weight: 500; color: var(--muted); }
-  .linkish { border: none; background: none; padding: 0; color: var(--accent); font: inherit;
-             font-size: 10.5px; cursor: pointer; text-decoration: underline; }
-  .map { height: 300px; border-radius: 10px; border: 1px solid var(--line); background: #eef1f5; z-index: 0; }
-  .map.small { height: 240px; margin-top: 12px; }
-  .map-note { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
-  .map-off { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
-  .pin-num { background: var(--accent); color: #fff; border: 2px solid #fff; border-radius: 50%;
-             width: 22px !important; height: 22px !important; margin: -11px 0 0 -11px !important;
-             display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
-             box-shadow: 0 1px 3px rgba(0,0,0,.35); }
-
-  /* ---- photos and map links */
-  .bbrow { display: flex; gap: 10px; align-items: flex-start; }
-  .thumb { flex: 0 0 auto; width: 72px; height: 54px; border-radius: 6px; object-fit: cover;
-           background: #eef1f5; border: 1px solid var(--line); cursor: zoom-in; }
-  .thumb.lg { width: 96px; height: 72px; }
-  .maplink { font-size: 11.5px; color: var(--accent); text-decoration: none; white-space: nowrap; }
-  .maplink:hover { text-decoration: underline; }
-  .num-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
-               border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
-               margin-right: 6px; vertical-align: 1px; }
-  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center;
-              justify-content: center; z-index: 1000; padding: 16px; cursor: zoom-out; }
-  .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
-  .plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-  /* ---- swap suggestions */
-  .swap { margin-top: 8px; padding: 7px 10px; border-radius: 7px; background: #f0f7f3; border: 1px solid #cdebd9;
-          font-size: 12px; }
-  .swap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-  .swap-row + .swap-row { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cdebd9; }
-  .swap .lead { font-weight: 700; color: var(--ok); }
-  .swap .nm { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-  .swap .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .swap .save { color: var(--ok); font-weight: 700; }
-  .swap .btn { padding: 3px 10px; font-size: 12px; margin-left: auto; }
-  .swap.none { background: #fbfcfd; border-color: var(--line); color: var(--muted); }
-  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #16181d; color: #fff;
-           border-radius: 10px; padding: 10px 14px; font-size: 13px; display: flex; gap: 12px; align-items: center;
-           box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 1100; max-width: calc(100% - 32px); }
-  .toast button { border: none; background: none; color: #93b4ff; font: inherit; font-weight: 700; cursor: pointer; }
-  .inline-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  .inline-field select { font: inherit; font-size: 12.5px; padding: 4px 6px; border: 1px solid var(--line);
-          border-radius: 7px; background: #fff; color: var(--ink); }
-
-  /* ---- heatmap */
-  .map-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 8px; }
-  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .legend { background: rgba(255,255,255,.94); border-radius: 8px; padding: 7px 9px; font-size: 11px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.2); line-height: 1.5; }
-  .legend b { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
-  .heat-pop { font-size: 12.5px; line-height: 1.5; }
-  .heat-pop .btn { margin-top: 6px; }
-
-  /* ---- budget curve */
-  .curve-card { margin-bottom: 18px; }
-  .curve-card h3 { font-size: 15px; margin: 0 0 4px; }
-  .curve-card p { margin: 0 0 10px; color: #374151; }
-  .curve-wrap { position: relative; }
-  .curve-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .curve-wrap .ax { font-size: 11px; fill: var(--muted); }
-  .curve-wrap .grid { stroke: #eef1f5; }
-  .curve-tip { position: absolute; pointer-events: none; background: #16181d; color: #fff; font-size: 12px;
-               padding: 7px 9px; border-radius: 7px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px));
-               font-variant-numeric: tabular-nums; }
-
-  /* ---- saved plans and compare */
-  .section-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
-  .section-head h2 { font-size: 16px; margin: 0; }
-  .section-head .sp { flex: 1; }
-  .section-head input[type=search] { font: inherit; padding: 6px 10px; border: 1px solid var(--line);
-          border-radius: 8px; min-width: 200px; }
-  .client { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
-            background: #fbfcfd; }
-  .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-  .row-actions .btn { padding: 4px 10px; font-size: 12px; }
-  .cmp th { white-space: nowrap; }
-  .cmp td { min-width: 150px; }
-  .cmp td:first-child, .cmp th:first-child { min-width: 130px; color: var(--muted); font-weight: 600; font-size: 12px; }
-  .cmp .best { color: var(--ok); font-weight: 700; }
-  .cmp .best::after { content: " ★"; font-size: 11px; }
-  .bar { height: 5px; border-radius: 3px; background: var(--accent); opacity: .7; margin-top: 4px; }
-  .cmp ol { margin: 0; padding-left: 18px; font-size: 12px; }
-  .cmp .shared { color: var(--accent); font-weight: 600; }
-  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 20px; width: min(380px, calc(100% - 32px));
-           box-shadow: 0 10px 30px rgba(0,0,0,.2); }
-  dialog::backdrop { background: rgba(0,0,0,.35); }
-  dialog h3 { margin: 0 0 14px; font-size: 16px; }
-  dialog .field { margin-bottom: 10px; }
-  dialog .toolbar { justify-content: flex-end; }
-  .muted { color: var(--muted); }
-
-  /* ---- market */
-  .crumbs { font-size: 13px; }
-  .crumbs button { border: none; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; }
-  .sortable { cursor: pointer; user-select: none; }
-  .sortable.on { color: var(--accent); }
-  .mk tbody tr.click { cursor: pointer; }
-  .mk tbody tr.click:hover td { background: #f7f9fc; }
-  .mk td.split { color: var(--muted); }
-  .mk th, .mk td { padding: 9px 10px; vertical-align: middle; }
-  .mk td.name { white-space: nowrap; }
-  .overview { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-bottom: 14px; }
-</style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Billboard Calculator</h1>
-  <p class="sub" id="snapshotNote">Budget and impression planner over the survey ads inventory.</p>
-
-  <div class="tabs" role="tablist">
-    <button class="tab active" type="button" data-tab="planner" role="tab">Planner</button>
-    <button class="tab" type="button" data-tab="custom" role="tab">Custom plan <span class="count" id="tabCount">0</span></button>
-    <button class="tab" type="button" data-tab="saved" role="tab">Saved plans <span class="count" id="savedCount">0</span></button>
-    <button class="tab" type="button" data-tab="market" role="tab">Market</button>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="/">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="11" rx="1.5"/><path d="M8 15v5M16 15v5M7 9.5h6M7 12h3"/></svg></span>
+      <span><span class="brand-name">Billboard Calculator</span><br><span class="brand-sub">CPM &amp; media planner</span></span>
+    </a>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" type="button" data-tab="planner" role="tab">Planner</button>
+      <button class="tab" type="button" data-tab="custom" role="tab">Custom plan <span class="count" id="tabCount">0</span></button>
+      <button class="tab" type="button" data-tab="saved" role="tab">Saved plans <span class="count" id="savedCount">0</span></button>
+      <button class="tab" type="button" data-tab="market" role="tab">Market</button>
+    </nav>
+    <span class="data-badge" id="dataBadge" title="Loading data details…"><span class="dot"></span><span id="dataBadgeText">Loading data…</span></span>
   </div>
+</header>
 
+<main class="wrap">
   <div id="tab-planner">
-  <div class="card">
-    <form id="f">
-      <div class="form-row">
-        <div class="field wide">
-          <label for="city">City</label>
-          <select id="city"><option>Loading…</option></select>
-        </div>
+    <div class="page-head">
+      <div>
+        <h1>Campaign planner</h1>
+        <p>Find the most efficient billboard mix for a budget, an impression goal, or both.</p>
+      </div>
+    </div>
 
-        <div class="pair">
-          <div class="field">
-            <label for="minb">Min boards</label>
-            <input id="minb" type="number" min="1" max="6" value="1">
+    <div class="planner">
+      <aside class="card settings">
+        <div class="card-head"><div><h2>Campaign settings</h2></div></div>
+        <form id="f">
+          <div class="form-section">
+            <span class="eyebrow">Market</span>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="city">City</label>
+                <select id="city"><option>Loading…</option></select>
+              </div>
+              <div class="field">
+                <label for="dtype">Format</label>
+                <select id="dtype">
+                  <option value="">All formats</option>
+                  <option value="OOH">OOH</option>
+                  <option value="DOOH">DOOH</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="months">Duration</label>
+                <div class="input-group"><input id="months" type="number" min="1" max="24" value="3"><span class="affix end">months</span></div>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="maxb">Max boards</label>
-            <input id="maxb" type="number" min="1" max="6" value="3">
+
+          <div class="form-section">
+            <span class="eyebrow">Area</span>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="distPick">Districts</label>
+                <div class="chips" id="distChips"></div>
+                <select id="distPick"><option value="">All districts</option></select>
+              </div>
+              <div class="field">
+                <label for="near">Near a place</label>
+                <input id="near" type="search" placeholder="e.g. sudirman" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="radius">Radius</label>
+                <div class="input-group"><input id="radius" type="number" min="0.1" max="50" step="any" value="2"><span class="affix end">km</span></div>
+              </div>
+              <div class="hint full" id="nearHint" style="margin-top:-6px">Anywhere in the city</div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <span class="eyebrow">Plan size</span>
+            <div class="form-grid">
+              <div class="field">
+                <label for="minb">Min billboards</label>
+                <input id="minb" type="number" min="1" max="6" value="1">
+              </div>
+              <div class="field">
+                <label for="maxb">Max billboards</label>
+                <input id="maxb" type="number" min="1" max="6" value="3">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <span class="eyebrow">Goal</span>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="budget">Budget</label>
+                <div class="input-group"><span class="affix">Rp</span><input id="budget" type="number" min="0" step="1000000" placeholder="No limit"></div>
+                <div class="hint" id="budgetHint">No limit</div>
+              </div>
+              <div class="field full">
+                <label for="target">Impression target</label>
+                <input id="target" type="number" min="0" step="100000" placeholder="No target">
+                <div class="hint" id="targetHint">No target</div>
+              </div>
+            </div>
+          </div>
+
+          <button id="go" class="btn primary lg block submit" type="submit">Calculate</button>
+          <p class="help">
+            Leave the budget blank to find the cheapest set that hits your impression target.
+            Leave the target blank to spend the budget on the most efficient billboards.
+            Set both to fit the target within a budget cap.
+          </p>
+        </form>
+      </aside>
+
+      <div class="planner-main">
+        <section class="card map-card">
+          <div class="card-head">
+            <div><h3>Inventory map</h3></div>
+            <span class="sp"></span>
+            <span class="heat-note" id="heatNote"></span>
+            <label class="switch"><input type="checkbox" id="heatToggle"><span class="track"></span>CPM heatmap</label>
+          </div>
+          <div id="plannerMap" class="map"></div>
+          <div class="map-note" id="plannerMapNote">Grey dots are every billboard in the city. Click the map to plan around that spot.</div>
+        </section>
+
+        <div id="out">
+          <div class="card empty-state">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></div>
+            <h3>Your plans will appear here</h3>
+            <p>Pick a city, set a budget or impression target, and press Calculate to see the best billboard combinations.</p>
           </div>
         </div>
-
-        <div class="field narrow">
-          <label for="months">Months</label>
-          <input id="months" type="number" min="1" max="24" value="3">
-        </div>
-
-        <div class="field narrow">
-          <label for="dtype">Type</label>
-          <select id="dtype">
-            <option value="">All</option>
-            <option value="OOH">OOH</option>
-            <option value="DOOH">DOOH</option>
-          </select>
-        </div>
       </div>
-
-      <div class="form-row area-row">
-        <div class="field wide">
-          <label for="distPick">Districts</label>
-          <div class="chips" id="distChips"></div>
-          <select id="distPick" class="plain"><option value="">All districts</option></select>
-        </div>
-        <div class="field wide">
-          <label for="near">Near a place</label>
-          <input id="near" type="search" placeholder="e.g. sudirman, or click the map" autocomplete="off">
-          <div class="hint" id="nearHint">Anywhere in the city</div>
-        </div>
-        <div class="field narrow">
-          <label for="radius">Radius (km)</label>
-          <input id="radius" type="number" min="0.1" max="50" step="any" value="2">
-        </div>
-      </div>
-      <div class="map-bar">
-        <label class="toggle"><input type="checkbox" id="heatToggle"> CPM heatmap by district</label>
-        <span class="map-note" id="heatNote" style="margin:0"></span>
-      </div>
-      <div id="plannerMap" class="map"></div>
-      <div class="map-note" id="plannerMapNote">Grey dots are every billboard in the city. Click the map to plan around that spot.</div>
-
-      <div class="form-row">
-        <div class="field wide">
-          <label for="budget">Budget (Rp)</label>
-          <input id="budget" type="number" min="0" step="1000000" placeholder="No limit">
-          <div class="hint" id="budgetHint">No limit</div>
-        </div>
-
-        <div class="field wide">
-          <label for="target">Impression target</label>
-          <input id="target" type="number" min="0" step="100000" placeholder="No target">
-          <div class="hint" id="targetHint">No target</div>
-        </div>
-
-        <button id="go" type="submit">Calculate</button>
-      </div>
-    </form>
-    <p class="hint" style="margin-top: 12px;">
-      Leave budget blank to find the cheapest set that hits your impression
-      target. Leave impression target blank to spend the budget on the most
-      efficient billboards available. Set both to fit the target within a
-      budget cap.
-    </p>
-  </div>
-
-  <div id="out"></div>
+    </div>
   </div>
 
   <div id="tab-custom" hidden>
+    <div class="page-head">
+      <div>
+        <h1>Custom plan</h1>
+        <p>Hand-pick billboards, see live totals, and swap in cheaper boards nearby.</p>
+      </div>
+    </div>
     <div class="builder">
       <section class="panel">
         <div class="panel-head">
           <h2>Find billboards</h2>
-          <div class="form-row">
+          <div class="source">Search by name, address or area.</div>
+          <div class="form-row" style="margin-top:14px">
             <div class="field wide">
               <label for="q">Search</label>
-              <input id="q" type="search" placeholder="Name, address, area… e.g. menteng atas" autocomplete="off">
+              <input id="q" type="search" placeholder="e.g. menteng atas" autocomplete="off">
             </div>
           </div>
-          <div class="form-row" style="margin-top: 8px;">
+          <div class="form-row">
             <div class="field">
               <label for="qcity">City</label>
               <select id="qcity"><option value="">All cities</option></select>
             </div>
             <div class="field">
-              <label for="qtype">Type</label>
+              <label for="qtype">Format</label>
               <select id="qtype">
-                <option value="">All</option>
+                <option value="">All formats</option>
                 <option value="OOH">OOH</option>
                 <option value="DOOH">DOOH</option>
               </select>
@@ -396,14 +186,14 @@
         <div class="panel-head">
           <h2>Your plan</h2>
           <div class="source" id="planSource">Drag billboards in from the search, or tap Add. You can also open any generated plan from the Planner tab with "Customize this plan".</div>
-          <div class="form-row" style="margin-top: 10px;">
+          <div class="form-row" style="margin-top:14px">
             <div class="field narrow">
               <label for="cmonths">Months</label>
               <input id="cmonths" type="number" min="1" max="24" value="3">
             </div>
             <div class="field">
-              <label for="cbudget">Budget (Rp)</label>
-              <input id="cbudget" type="number" min="0" step="1000000" placeholder="No limit">
+              <label for="cbudget">Budget</label>
+              <div class="input-group"><span class="affix">Rp</span><input id="cbudget" type="number" min="0" step="1000000" placeholder="No limit"></div>
             </div>
             <div class="field">
               <label for="ctarget">Impression target</label>
@@ -414,13 +204,13 @@
           <div class="toolbar">
             <button class="btn primary" type="button" id="saveCustom">Save plan</button>
             <button class="btn" type="button" id="sortCpm">Sort by CPM</button>
-            <button class="btn" type="button" id="xlsCustom">Download Excel</button>
-            <button class="btn" type="button" id="pdfCustom">Download PDF</button>
+            <button class="btn" type="button" id="xlsCustom">Excel</button>
+            <button class="btn" type="button" id="pdfCustom">PDF</button>
             <span class="sp"></span>
-            <button class="btn" type="button" id="clearPlan">Clear plan</button>
+            <button class="btn ghost danger" type="button" id="clearPlan">Clear plan</button>
           </div>
           <div class="toolbar">
-            <label class="inline-field">Suggest cheaper boards of the same type within
+            <label class="inline-field">Suggest cheaper boards of the same format within
               <select id="swapRadius">
                 <option value="1">1 km</option><option value="3" selected>3 km</option>
                 <option value="5">5 km</option><option value="10">10 km</option>
@@ -437,42 +227,56 @@
   </div>
 
   <div id="tab-saved" hidden>
-    <div class="card">
-      <div class="section-head">
-        <h2>Saved plans</h2>
-        <span class="sp"></span>
-        <input id="savedFilter" type="search" placeholder="Filter by client or plan name" autocomplete="off">
+    <div class="page-head">
+      <div>
+        <h1>Saved plans</h1>
+        <p>Plans are saved in this browser. Use Share link to send one to a colleague who has a login. Tick up to 4 plans to compare them.</p>
       </div>
-      <div class="hint" style="margin:-6px 0 10px">Plans are saved in this browser. Use <b>Share link</b> to send one to a colleague who has a login. Tick up to 4 plans to compare them below.</div>
+    </div>
+    <div class="card table-card">
+      <div class="card-head">
+        <h2>Plans by client</h2>
+        <span class="sp"></span>
+        <input id="savedFilter" class="search-input" type="search" placeholder="Filter by client or plan name" autocomplete="off">
+      </div>
       <div class="scroll" id="savedList"></div>
     </div>
-    <div class="card" id="compareCard">
-      <div class="section-head"><h2>Compare</h2><span class="sp"></span>
-        <button class="btn" type="button" id="clearCompare">Clear selection</button></div>
+    <div class="card table-card" id="compareCard">
+      <div class="card-head"><h2>Compare</h2><span class="sp"></span>
+        <button class="btn sm" type="button" id="clearCompare">Clear selection</button></div>
       <div class="scroll" id="compareOut"></div>
     </div>
   </div>
 
   <div id="tab-market" hidden>
-    <div class="card">
-      <div class="section-head">
+    <div class="page-head">
+      <div>
+        <h1>Market overview</h1>
+        <p>Typical CPM and prices by city and district. Click a city to see its districts.</p>
+      </div>
+    </div>
+    <div class="card table-card">
+      <div class="card-head">
         <h2 class="crumbs" id="mkCrumbs">All cities</h2>
         <span class="sp"></span>
-        <input id="mkFilter" type="search" placeholder="Filter by name" autocomplete="off">
-        <label class="inline-field">Type
+        <input id="mkFilter" class="search-input" type="search" placeholder="Filter by name" autocomplete="off">
+        <label class="inline-field">Format
           <select id="mkType"><option value="">All</option><option value="OOH">OOH</option><option value="DOOH">DOOH</option></select>
         </label>
       </div>
       <div class="overview" id="mkOverview"></div>
       <div class="scroll" id="mkTable"></div>
-      <p class="hint">Typical CPM is the median, so a few extreme prices don't skew it. Ranges run from the 10th to the 90th percentile. Click a city to see its districts.</p>
+      <div class="card-foot">Typical CPM is the median, so a few extreme prices don't skew it. Ranges run from the 10th to the 90th percentile.</div>
     </div>
   </div>
-</div>
+
+  <p class="footnote" id="snapshotNote">Budget and impression planner over the survey ads inventory.</p>
+</main>
 
 <dialog id="saveDialog">
   <form method="dialog" id="saveForm">
     <h3>Save plan</h3>
+    <p class="sub">Group it under a client so it's easy to find and compare later.</p>
     <div class="field">
       <label for="saveClient">Client</label>
       <input id="saveClient" list="clientList" placeholder="e.g. Acme Coffee" autocomplete="off" required>
@@ -482,11 +286,11 @@
       <label for="saveName">Plan name</label>
       <input id="saveName" placeholder="e.g. Jaksel Q1, 3 months" autocomplete="off" required>
     </div>
-    <label class="toggle" id="saveReplaceWrap" hidden style="font-weight:500;margin-bottom:10px">
+    <label class="toggle" id="saveReplaceWrap" hidden style="font-weight:500">
       <input type="checkbox" id="saveReplace" checked> <span id="saveReplaceLabel">Update the saved copy</span></label>
     <div class="toolbar">
       <button class="btn" type="button" id="saveCancel">Cancel</button>
-      <button class="btn primary" type="submit">Save</button>
+      <button class="btn primary" type="submit">Save plan</button>
     </div>
   </form>
 </dialog>
@@ -505,6 +309,11 @@ const thumb = (b, cls = '') => b.image_url
        onerror="this.style.visibility='hidden'">` : '';
 const mapLink = b => hasPos(b)
   ? `<a class="maplink" href="${gmaps(b)}" target="_blank" rel="noopener">Map ↗</a>` : '';
+// colors come from the CSS tokens in app.css, so a brand swap there reaches maps, charts and PDFs too
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const rgbOf = name => { const h = cssVar(name).replace('#', '');
+  const x = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  return [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16)); };
 let snapshotStamp = '';
 let dataIsLive = false;
 const dataFreshnessLine = () => dataIsLive
@@ -554,11 +363,15 @@ fetch('/api/meta').then(r => r.json()).then(d => {
   snapshotStamp = stamp;
   const live = d.data_source === 'bigquery';
   dataIsLive = live;
+  $('dataBadge').classList.toggle('live', live);
+  $('dataBadgeText').innerHTML = `${live ? 'Live data' : 'Snapshot'}<span class="txt-long"> · ${
+    esc(isNaN(dt) ? d.snapshot_generated_at : dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>`;
   $('snapshotNote').textContent =
     (live ? `Live data, refreshed ${stamp} (${d.row_count.toLocaleString()} priced billboards).`
           : `Snapshot data as of ${stamp} (${d.row_count.toLocaleString()} priced billboards) \u2014 not live.`) +
     (d.hidden_count ? ` ${d.hidden_count} billboards with a Rp 0 CPM are hidden.` : '') +
     (d.data_note ? ` ${d.data_note}` : '');
+  $('dataBadge').title = $('snapshotNote').textContent;
 }).catch(() => {});
 
 // ---- city list
@@ -621,7 +434,7 @@ function boardRows(boards, months) {
         <div>
           <div class="name">${esc(b.inventory_name) || '—'}</div>
           <div class="where">${where(b)}</div>
-          <div>${tags(b)} ${mapLink(b)}</div>
+          <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
         </div>
       </div></td>
       <td class="num">${cpm(b.cpm_calculated)}</td>
@@ -648,22 +461,27 @@ function render(d, months) {
   let html = `<div class="msg ${cls}">${esc(d.message)}</div><div id="curveOut"></div>`;
 
   html += d.plans.map((p, i) => `
-    <div class="plan ${p.recommended ? 'best' : ''}">
+    <article class="plan ${p.recommended ? 'best' : ''}">
       <div class="plan-head">
-        <div class="rank">${p.recommended ? '★ Recommended' : `${p.billboard_count} billboard(s)`}</div>
-        <div class="stat"><div class="k">Billboards</div><div class="v">${p.billboard_count}</div></div>
-        <div class="stat"><div class="k">Total cost</div><div class="v">${rp(p.total_cost)}</div></div>
-        <div class="stat"><div class="k">Impressions</div><div class="v">${num(p.total_impression)}</div></div>
-        <div class="stat"><div class="k">Blended CPM</div><div class="v">${cpm(p.blended_cpm)}</div></div>
-        ${p.budget_remaining != null
-          ? `<div class="stat"><div class="k">Budget left</div><div class="v">${rp(p.budget_remaining)}</div></div>`
-          : ''}
-        ${p.impression_vs_target_pct != null
-          ? `<div class="pill ${p.meets_impression_target ? 'ok' : 'warn'}">
-               ${p.meets_impression_target ? '✓ hits target'
-                 : `${Math.round(p.impression_vs_target_pct)}% of target`}
-             </div>`
-          : ''}
+        <div class="plan-title">
+          ${p.recommended ? '<span class="pill accent">★ Recommended</span>' : ''}
+          <span class="rank">${plural(p.billboard_count, 'billboard')} · ${months} month${months === 1 ? '' : 's'}</span>
+          <span class="sp"></span>
+          ${p.impression_vs_target_pct != null
+            ? `<span class="pill ${p.meets_impression_target ? 'ok' : 'warn'}">
+                 ${p.meets_impression_target ? '✓ Hits target'
+                   : `${Math.round(p.impression_vs_target_pct)}% of target`}
+               </span>`
+            : ''}
+        </div>
+        <div class="kpis">
+          <div class="stat"><div class="k">Total cost</div><div class="v">${rp(p.total_cost)}</div></div>
+          <div class="stat"><div class="k">Impressions</div><div class="v">${num(p.total_impression)}</div></div>
+          <div class="stat"><div class="k">Blended CPM</div><div class="v">${cpm(p.blended_cpm)}</div></div>
+          ${p.budget_remaining != null
+            ? `<div class="stat ${p.budget_remaining < 0 ? 'neg' : ''}"><div class="k">Budget left</div><div class="v">${rp(p.budget_remaining)}</div></div>`
+            : ''}
+        </div>
       </div>
       <div class="scroll"><table>${HEAD}<tbody>
         ${boardRows(p.billboards, months)}
@@ -671,15 +489,16 @@ function render(d, months) {
       <div class="plan-actions">
         <button class="btn primary" type="button" data-customize="${i}">Customize this plan</button>
         <button class="btn" type="button" data-saveplan="${i}">Save plan</button>
-        <button class="btn" type="button" data-xls="${i}">Download Excel</button>
-        <button class="btn" type="button" data-pdf="${i}">Download PDF</button>
+        <span class="sp"></span>
+        <button class="btn" type="button" data-xls="${i}">Excel</button>
+        <button class="btn" type="button" data-pdf="${i}">PDF</button>
       </div>
-    </div>`).join('');
+    </article>`).join('');
 
   if (d.candidates.length) {
-    html += `<div class="card"><details>
-      <summary>All ${d.candidate_count} candidate billboards in this city
-        (showing ${d.candidates.length}, cheapest CPM first)</summary>
+    html += `<div class="card flush"><details>
+      <summary>All ${num(d.candidate_count)} candidate billboards
+        <span class="muted" style="font-weight:500">· showing ${d.candidates.length}, cheapest CPM first</span></summary>
       <div class="scroll"><table>${HEAD}<tbody>
         ${boardRows(d.candidates, months)}
       </tbody></table></div>
@@ -827,7 +646,7 @@ function renderResults() {
       <div class="body">
         <div class="name">${esc(b.inventory_name) || '—'}</div>
         <div class="where">${where(b)}</div>
-        <div>${tags(b)} ${mapLink(b)}</div>
+        <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
         <div class="nums">
           <div><span>CPM</span> <b>${cpm(b.cpm_calculated)}</b></div>
           <div><span>Price/mo</span> <b>${rp(b.monthly_price)}</b></div>
@@ -835,7 +654,7 @@ function renderResults() {
         </div>
       </div>
       <div class="side">
-        <button class="btn ${added ? '' : 'primary'}" type="button" data-add="${i}" ${added ? 'disabled' : ''}>
+        <button class="btn sm ${added ? '' : 'primary'}" type="button" data-add="${i}" ${added ? 'disabled' : ''}>
           ${added ? 'In plan' : '+ Add'}</button>
       </div>
     </div>`;
@@ -861,25 +680,24 @@ function renderCustom() {
     <div class="stat"><div class="k">Blended CPM</div><div class="v">${cpm(blended)}</div></div>`;
   if (budget > 0) {
     const left = budget - cost;
-    t += `<div class="stat"><div class="k">Budget left</div>
-      <div class="v" style="color:${left < 0 ? 'var(--warn)' : 'inherit'}">${rp(left)}</div></div>`;
+    t += `<div class="stat ${left < 0 ? 'neg' : ''}"><div class="k">Budget left</div><div class="v">${rp(left)}</div></div>`;
   }
   if (target > 0 && custom.boards.length) {
     const ok = impr >= target;
-    t += `<div class="pill ${ok ? 'ok' : 'warn'}">${ok ? '✓ hits target' : Math.round(impr / target * 100) + '% of target'}</div>`;
+    t += `<div class="pill ${ok ? 'ok' : 'warn'}">${ok ? '✓ Hits target' : Math.round(impr / target * 100) + '% of target'}</div>`;
   }
-  if (budget > 0 && cost > budget) t += `<div class="pill warn">over budget</div>`;
+  if (budget > 0 && cost > budget) t += `<div class="pill warn">Over budget</div>`;
   $('totals').innerHTML = t;
 
   $('drop').innerHTML = !custom.boards.length
-    ? '<div class="empty">Your plan is empty.<br>Drag billboards here, or tap <b>+ Add</b> on a search result.</div>'
+    ? '<div class="empty"><b style="color:var(--ink)">Your plan is empty</b><br>Drag billboards here, or tap <b>+ Add</b> on a search result.</div>'
     : custom.boards.map((b, i) => `
       <div class="bb">
         ${thumb(b, 'lg')}
         <div class="body">
           <div class="name"><span class="num-badge">${i + 1}</span>${esc(b.inventory_name) || '—'}</div>
           <div class="where">${where(b)}</div>
-          <div>${tags(b)} ${mapLink(b)}</div>
+          <div class="meta-line">${tags(b)} ${mapLink(b)}</div>
           <div class="nums">
             <div><span>CPM</span> <b>${cpm(b.cpm_calculated)}</b></div>
             <div><span>Price/mo</span> <b>${rp(b.monthly_price)}</b></div>
@@ -1015,7 +833,7 @@ function drawPoints(points) {
   if (pointsLayer) pointsLayer.remove();
   if (planLayer) { planLayer.remove(); planLayer = null; }
   pointsLayer = L.layerGroup(points.map(p =>
-    L.circleMarker([p.lat, p.lng], { radius: 3, weight: 0, fillColor: '#6b7280', fillOpacity: .55 })
+    L.circleMarker([p.lat, p.lng], { radius: 3, weight: 0, fillColor: cssVar('--map-dot'), fillOpacity: .55 })
       .bindTooltip(`${esc(p.name)} · CPM ${cpm(p.cpm)}`)));
   if (!$('heatToggle').checked) pointsLayer.addTo(plannerMap);
   const b = robustBounds(points.map(p => [p.lat, p.lng]));
@@ -1039,8 +857,8 @@ function drawCircle() {
   const r = Math.max(0, +$('radius').value || 0) * 1000;
   if (circle) circle.remove();
   if (centerMarker) centerMarker.remove();
-  circle = L.circle(area.center, { radius: r, color: '#1a56db', weight: 2, fillOpacity: .08 }).addTo(plannerMap);
-  centerMarker = L.circleMarker(area.center, { radius: 5, color: '#fff', weight: 2, fillColor: '#1a56db', fillOpacity: 1 })
+  circle = L.circle(area.center, { radius: r, color: cssVar('--accent'), weight: 2, fillOpacity: .08 }).addTo(plannerMap);
+  centerMarker = L.circleMarker(area.center, { radius: 5, color: '#fff', weight: 2, fillColor: cssVar('--accent'), fillOpacity: 1 })
     .addTo(plannerMap);
 }
 $('radius').addEventListener('input', drawCircle);
@@ -1104,7 +922,7 @@ function drawCustomMap() {
   const plan = custom.boards.filter(hasPos);
   customLayer = L.layerGroup([
     ...results.map(b =>
-      L.circleMarker([b.latitude, b.longitude], { radius: 5, weight: 1, color: '#fff', fillColor: '#6b7280', fillOpacity: .8 })
+      L.circleMarker([b.latitude, b.longitude], { radius: 5, weight: 1, color: '#fff', fillColor: cssVar('--map-dot'), fillOpacity: .8 })
         .bindPopup(`<b>${esc(b.inventory_name)}</b><br>CPM ${cpm(b.cpm_calculated)} · ${rp(b.monthly_price)}/mo<br>
           <button class="btn primary" type="button" style="margin-top:6px" data-add-id="${esc(b.inventory_id)}">+ Add to plan</button>`)),
     ...custom.boards.map((b, i) => hasPos(b)
@@ -1239,8 +1057,10 @@ async function exportPdf(plan) {
   const t = planTotals(plan), m = plan.months;
   const photos = await Promise.all(plan.boards.map(b => photoData(b.image_url)));
 
-  doc.setFont('helvetica', 'bold').setFontSize(17).setTextColor(22, 24, 29).text(plan.title, 14, 17);
-  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(107, 114, 128).text(plan.subtitle, 14, 23);
+  const INK = rgbOf('--ink'), MUTED = rgbOf('--muted'), LINE = rgbOf('--line'), SURF = rgbOf('--surface-2'), ACC = rgbOf('--accent');
+  doc.setFillColor(...ACC).rect(0, 0, W, 3, 'F');
+  doc.setFont('helvetica', 'bold').setFontSize(17).setTextColor(...INK).text(plan.title, 14, 17);
+  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(...MUTED).text(plan.subtitle, 14, 23);
 
   const stats = [['Billboards', String(plan.boards.length)], ['Months', String(m)], ['Total cost', rp(t.cost)],
     ['Impressions', num(t.impr)], ['Blended CPM', cpm(t.blended)]];
@@ -1249,9 +1069,9 @@ async function exportPdf(plan) {
   const bw = (W - 28) / stats.length;
   stats.forEach(([k, v], i) => {
     const x = 14 + i * bw;
-    doc.setDrawColor(227, 230, 234).setFillColor(251, 252, 253).roundedRect(x, 28, bw - 3, 15, 2, 2, 'FD');
-    doc.setFontSize(7.5).setTextColor(107, 114, 128).text(k.toUpperCase(), x + 3, 33);
-    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(22, 24, 29).text(v, x + 3, 40);
+    doc.setDrawColor(...LINE).setFillColor(...SURF).roundedRect(x, 28, bw - 3, 15, 2, 2, 'FD');
+    doc.setFontSize(7.5).setTextColor(...MUTED).text(k.toUpperCase(), x + 3, 33);
+    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...INK).text(v, x + 3, 40);
     doc.setFont('helvetica', 'normal');
   });
 
@@ -1267,13 +1087,13 @@ async function exportPdf(plan) {
     ]),
     foot: [['', '', 'Total', '', cpm(t.blended), '', rp(t.cost), '', num(t.impr), '']],
     theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 2, valign: 'middle', lineColor: [227, 230, 234], textColor: [22, 24, 29] },
-    headStyles: { fillColor: [26, 86, 219], textColor: 255 },
-    footStyles: { fillColor: [251, 252, 253], textColor: [22, 24, 29], fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 2, valign: 'middle', lineColor: LINE, textColor: INK },
+    headStyles: { fillColor: ACC, textColor: 255 },
+    footStyles: { fillColor: SURF, textColor: INK, fontStyle: 'bold' },
     columnStyles: {
       0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 30, minCellHeight: 22 }, 2: { cellWidth: 82 },
       3: { cellWidth: 20 }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' },
-      7: { halign: 'right' }, 8: { halign: 'right' }, 9: { cellWidth: 13, textColor: [26, 86, 219] },
+      7: { halign: 'right' }, 8: { halign: 'right' }, 9: { cellWidth: 13, textColor: ACC },
     },
     didDrawCell: d => {
       if (d.section !== 'body') return;
@@ -1288,7 +1108,7 @@ async function exportPdf(plan) {
         doc.link(d.cell.x, d.cell.y, d.cell.width, d.cell.height, { url: gmaps(b) });
     },
     didDrawPage: () => {
-      doc.setFontSize(7.5).setTextColor(107, 114, 128);
+      doc.setFontSize(7.5).setTextColor(...MUTED);
       doc.text(dataFreshnessLine(), 14, H - 7);
       doc.text(`Page ${doc.internal.getNumberOfPages()}`, W - 14, H - 7, { align: 'right' });
     },
@@ -1435,7 +1255,7 @@ $('drop').addEventListener('click', e => {
 // CPM heatmap on the planner map
 // =================================================================
 
-const HEAT_COLORS = ['#1a9850', '#91cf60', '#fee08b', '#fc8d59', '#d73027'];
+const HEAT_COLORS = [1, 2, 3, 4, 5].map(k => cssVar('--heat-' + k));
 let heatLayer = null, heatLegend = null, heatSeq = 0;
 
 async function drawHeat() {
@@ -1539,21 +1359,23 @@ function curveHtml(d) {
   const user = pts.find(p => p.is_user_budget);
   const knee = d.knee_cost != null ? pts.find(p => p.cost === d.knee_cost) : null;
   const marks = [
-    user ? `<line x1="${x(user.budget)}" x2="${x(user.budget)}" y1="${T0}" y2="${H - B0}" stroke="#16181d" stroke-dasharray="4 4"/>
-            <text class="ax" x="${x(user.budget) + 5}" y="${T0 + 10}" style="fill:#16181d">Your budget</text>` : '',
-    knee ? `<circle cx="${x(knee.budget)}" cy="${y(knee.impressions)}" r="6" fill="#b45309" stroke="#fff" stroke-width="2"/>
-            <text class="ax" x="${x(knee.budget) + 9}" y="${y(knee.impressions) + 16}" style="fill:#b45309;font-weight:700">Returns start to drop</text>` : '',
+    user ? `<line class="budget-line" x1="${x(user.budget)}" x2="${x(user.budget)}" y1="${T0}" y2="${H - B0}" stroke-dasharray="4 4"/>
+            <text class="ax budget-label" x="${x(user.budget) + 5}" y="${T0 + 10}">Your budget</text>` : '',
+    knee ? `<circle class="knee" cx="${x(knee.budget)}" cy="${y(knee.impressions)}" r="6" stroke-width="2"/>
+            <text class="ax knee-label" x="${x(knee.budget) + 9}" y="${y(knee.impressions) + 16}">Returns start to drop</text>` : '',
   ].join('');
-  const dots = pts.map((p, k) => `<circle cx="${x(p.budget)}" cy="${y(p.impressions)}" r="3.5" fill="#1a56db"/>
+  const area = `${path} V${y(0)} H${x(pts[0].budget)} Z`;
+  const dots = pts.map((p, k) => `<circle class="pt" cx="${x(p.budget)}" cy="${y(p.impressions)}" r="3.5"/>
       <rect data-pt="${k}" x="${x(p.budget) - 12}" y="${T0}" width="24" height="${H - T0 - B0}" fill="transparent"/>`).join('');
   return `<div class="card curve-card">
-    <h3>Budget curve</h3>
+    <div class="card-head"><h3>Budget curve</h3><span class="sp"></span><span class="pill neutral">What each extra rupiah buys</span></div>
     <p>${curveSummary(d)}</p>
     <div class="curve-wrap">
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Impressions bought at each budget">
         ${grid}${xt}
         <text class="ax" x="${L0}" y="${H - 2}">Budget (${d.months} month${d.months === 1 ? '' : 's'}) →</text>
-        <path d="${path}" fill="none" stroke="#1a56db" stroke-width="2.5" stroke-linejoin="round"/>
+        <path class="area" d="${area}"/>
+        <path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>
         ${marks}${dots}
       </svg>
       <div class="curve-tip" hidden></div>
@@ -1701,7 +1523,7 @@ function renderSaved() {
       <td><div class="row-actions">${current ? '' : `
         <button class="btn" type="button" data-open="${esc(p.id)}">Open</button>
         <button class="btn" type="button" data-share="${esc(p.id)}">Share link</button>
-        <button class="btn" type="button" data-delete="${esc(p.id)}">Delete</button>`}</div></td>
+        <button class="btn danger" type="button" data-delete="${esc(p.id)}">Delete</button>`}</div></td>
     </tr>`;
   };
   const groups = {};
@@ -1792,7 +1614,7 @@ function renderCompare() {
     .filter(p => p && p.boards.length);
   $('compareCard').hidden = false;
   if (plans.length < 2) {
-    $('compareOut').innerHTML = `<div class="empty">Tick ${plans.length ? 'one more plan' : 'two to four plans'} above to see them side by side.</div>`;
+    $('compareOut').innerHTML = `<div class="empty" style="margin:16px 20px">Tick ${plans.length ? 'one more plan' : 'two to four plans'} above to see them side by side.</div>`;
     return;
   }
   const stats = plans.map(p => {
@@ -1831,7 +1653,7 @@ function renderCompare() {
     <thead><tr><th></th>${stats.map(s => `<th>${esc(s.p.name)}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(([k, f]) => `<tr><td>${k}</td>${stats.map(s => `<td>${f(s)}</td>`).join('')}</tr>`).join('')}</tbody>
   </table>
-  <div class="hint">★ marks the most impressions and the lowest blended CPM. Blue billboard names appear in more than one of these plans.</div>`;
+  <div class="hint" style="padding:12px 20px;margin:0;border-top:1px solid var(--line)">★ marks the most impressions and the lowest blended CPM. Blue billboard names appear in more than one of these plans.</div>`;
 }
 
 // =================================================================
@@ -1875,12 +1697,12 @@ function renderMarket() {
     ? `<button type="button" id="mkBack">All cities</button> › ${esc(market.city)}`
     : 'All cities';
   $('mkFilter').placeholder = market.city ? 'Filter districts' : 'Filter cities';
-  $('mkOverview').innerHTML = `
+  $('mkOverview').innerHTML = `<div class="kpis lg">
     <div class="stat"><div class="k">Billboards</div><div class="v">${num(o.count)}</div></div>
     <div class="stat"><div class="k">Typical CPM</div><div class="v">${cpm(o.median_cpm)}</div></div>
     <div class="stat"><div class="k">Typical CPM · OOH</div><div class="v">${cpm(o.ooh.median_cpm)}</div></div>
     <div class="stat"><div class="k">Typical CPM · DOOH</div><div class="v">${cpm(o.dooh.median_cpm)}</div></div>
-    <div class="stat"><div class="k">Typical price / mo</div><div class="v">${rp(o.median_price)}</div></div>`;
+    <div class="stat"><div class="k">Typical price / mo</div><div class="v">${rp(o.median_price)}</div></div></div>`;
   const f = $('mkFilter').value.trim().toLowerCase();
   const col = MK_COLS.find(c => c[0] === market.sort) || MK_COLS[1];
   const rows = d.rows.filter(r => !f || r.label.toLowerCase().includes(f)).sort((a, b) => {
@@ -1901,7 +1723,7 @@ function renderMarket() {
       <td class="num">${cpm(r.dooh.median_cpm)}</td>
       <td class="num">${short(r.cpm_p10)} – ${short(r.cpm_p90)}</td>
       <td class="num">${rp(r.median_price)}</td>
-      <td><div class="row-actions"><button class="btn" type="button" data-planhere="${esc(r.key)}">Plan here</button></div></td>
+      <td><div class="row-actions"><button class="btn sm" type="button" data-planhere="${esc(r.key)}">Plan here</button></div></td>
     </tr>`).join('');
   $('mkTable').innerHTML = `<table class="mk"><thead><tr>${head}</tr></thead><tbody>${body ||
     `<tr><td colspan="10" class="muted">Nothing matches that filter.</td></tr>`}</tbody></table>`;
