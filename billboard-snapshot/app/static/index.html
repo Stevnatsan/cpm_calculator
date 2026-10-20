@@ -76,10 +76,15 @@
                     <option value="DOOH">DOOH</option>
                   </select>
                 </div>
-                <div class="field full">
-                  <label for="sizePick">Size</label>
-                  <div class="chips" id="sizeChips"></div>
-                  <select id="sizePick"><option value="">Any size</option></select>
+                <div class="field full size-field">
+                  <div class="label-row">
+                    <span class="label">Size</span>
+                    <button type="button" class="link-btn" id="sizeClear" hidden>Any size</button>
+                  </div>
+                  <div class="size-grid" id="sizeGrid" role="group" aria-label="Size class"></div>
+                  <div class="size-sub">Exact size</div>
+                  <div class="size-pills" id="sizePills" role="group" aria-label="Exact size"></div>
+                  <div class="hint" id="sizeHint"></div>
                 </div>
                 <div class="field">
                   <label for="minb">Min boards</label>
@@ -1004,7 +1009,7 @@ const SIZE_NAMES = {
   '<15m2': 'Under 15 m²', '15-30m2': '15–30 m²', '30-60m2': '30–60 m²', '60-90m2': '60–90 m²',
   '90-120m2': '90–120 m²', '>120m2': 'Over 120 m²', 'Unknown': 'Size not recorded',
 };
-const sizes = { chosen: [], city: [] };
+const sizes = { chosen: [], city: [], showAll: false };
 const sizeName = c => SIZE_NAMES[c] || c;
 const dims = l => l.replace(' x ', ' × ') + ' m';
 function boardSize(b) {
@@ -1020,32 +1025,63 @@ function sizePayload(kind) {
 }
 function sizeLabel() { return sizes.chosen.map(sizeKeyName).join(' / '); }
 
+const SHORT_SIZE = { '<15m2': '< 15 m²', '>120m2': '> 120 m²', 'Unknown': 'Not recorded' };
+const sizeTileName = c => SHORT_SIZE[c] || sizeName(c);
+
 function renderSizes() {
-  $('sizeChips').innerHTML = sizes.chosen.map(k =>
-    `<span class="chip">${esc(sizeKeyName(k))}<button type="button" data-unsize="${esc(k)}"
-       aria-label="Remove ${esc(sizeKeyName(k))}">×</button></span>`).join('');
-  const opt = (k, text, n) => sizes.chosen.includes(k) ? ''
-    : `<option value="${esc(k)}">${esc(text)} (${n})</option>`;
-  // one group per class: the whole class first, then its exact sizes, most common first
-  $('sizePick').innerHTML =
-    `<option value="">${sizes.chosen.length ? 'Add another size…' : 'Any size'}</option>` +
-    sizes.city.map(c => `<optgroup label="${esc(sizeName(c.size_class))}">` +
-      opt('class:' + c.size_class, (c.size_class === 'Unknown' ? '' : 'All ') + sizeName(c.size_class),
-        c.inventory_count) +
-      (c.sizes || []).map(s => opt('size:' + s.size_label, dims(s.size_label), s.inventory_count)).join('') +
-      '</optgroup>').join('');
+  const chosen = new Set(sizes.chosen);
+  const classOn = c => chosen.has('class:' + c);
+  const max = Math.max(1, ...sizes.city.map(c => c.inventory_count));
+  $('sizeGrid').innerHTML = sizes.city.map(c => `
+    <button type="button" class="size-tile${classOn(c.size_class) ? ' on' : ''}" data-size="class:${esc(c.size_class)}"
+            aria-pressed="${classOn(c.size_class)}">
+      <span class="size-name">${esc(sizeTileName(c.size_class))}</span>
+      <span class="size-count">${num(c.inventory_count)} boards</span>
+      <span class="size-bar"><i style="width:${Math.max(4, Math.round(c.inventory_count / max * 100))}%"></i></span>
+    </button>`).join('') || '<div class="hint">No billboards in this city.</div>';
+
+  // exact sizes across every class, most common first; a chosen class covers its sizes
+  const all = sizes.city.flatMap(c => (c.sizes || []).map(x => ({ ...x, size_class: c.size_class })))
+    .sort((a, b) => b.inventory_count - a.inventory_count);
+  const shown = sizes.showAll ? all : all.filter((x, i) => i < 10 || chosen.has('size:' + x.size_label));
+  $('sizePills').innerHTML = shown.map(x => {
+    const covered = classOn(x.size_class), on = covered || chosen.has('size:' + x.size_label);
+    return `<button type="button" class="size-pill${on ? ' on' : ''}${covered ? ' covered' : ''}"
+              data-size="size:${esc(x.size_label)}" aria-pressed="${on}" ${covered ? `disabled title="Included in ${esc(sizeName(x.size_class))}"` : ''}>
+              ${esc(dims(x.size_label))}<span>${num(x.inventory_count)}</span></button>`;
+  }).join('') + (all.length > 10
+    ? `<button type="button" class="size-more" id="sizeMore">${sizes.showAll ? 'Fewer sizes' : `All ${all.length} sizes`}</button>` : '');
+
+  // how many billboards the current choice matches
+  const total = sizes.city.reduce((n, c) => n + c.inventory_count, 0);
+  const matched = sizes.chosen.length
+    ? sizes.city.reduce((n, c) => n + (classOn(c.size_class) ? c.inventory_count
+        : (c.sizes || []).reduce((m, x) => m + (chosen.has('size:' + x.size_label) ? x.inventory_count : 0), 0)), 0)
+    : total;
+  $('sizeHint').textContent = sizes.chosen.length
+    ? `${sizeLabel()} · ${num(matched)} of ${num(total)} boards`
+    : `Any size · ${num(total)} boards. Pick one or more to narrow it down.`;
+  $('sizeClear').hidden = !sizes.chosen.length;
 }
-$('sizePick').addEventListener('change', e => {
-  const c = e.target.value;
-  if (c && !sizes.chosen.includes(c)) sizes.chosen.push(c);
-  renderSizes();
+$('sizeGrid').addEventListener('click', toggleSize);
+$('sizePills').addEventListener('click', e => {
+  if (e.target.closest('#sizeMore')) { sizes.showAll = !sizes.showAll; renderSizes(); return; }
+  toggleSize(e);
 });
-$('sizeChips').addEventListener('click', e => {
-  const btn = e.target.closest('[data-unsize]');
-  if (!btn) return;
-  sizes.chosen = sizes.chosen.filter(c => c !== btn.dataset.unsize);
+function toggleSize(e) {
+  const btn = e.target.closest('[data-size]');
+  if (!btn || btn.disabled) return;
+  const k = btn.dataset.size;
+  sizes.chosen = sizes.chosen.includes(k) ? sizes.chosen.filter(x => x !== k) : [...sizes.chosen, k];
+  if (k.startsWith('class:') && sizes.chosen.includes(k)) {
+    // the class now covers its exact sizes, so drop them from the choice
+    const group = sizes.city.find(c => 'class:' + c.size_class === k);
+    const inside = new Set((group?.sizes || []).map(x => 'size:' + x.size_label));
+    sizes.chosen = sizes.chosen.filter(x => !inside.has(x));
+  }
   renderSizes();
-});
+}
+$('sizeClear').addEventListener('click', () => { sizes.chosen = []; renderSizes(); });
 
 // middle 90% of points, so one badly geocoded billboard doesn't zoom the map out to sea
 function robustBounds(latlngs) {
