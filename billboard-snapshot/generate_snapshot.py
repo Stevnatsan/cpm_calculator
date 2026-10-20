@@ -14,8 +14,13 @@ Usage (locally, with your own Google login):
 
 In CI it uses GOOGLE_APPLICATION_CREDENTIALS (a service-account key file),
 see .github/workflows/refresh-snapshot.yml.
+
+Without BigQuery access, run the query in the BigQuery console instead,
+save the results as CSV and load that file:
+    python generate_snapshot.py --csv bq-results.csv
 """
 
+import csv
 import datetime
 import json
 import sys
@@ -24,8 +29,8 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parent / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_source import DataStore, fetch_bigquery_rows  # noqa: E402
-from queries import OBT_TABLE  # noqa: E402
+from data_source import ALL_COLUMNS, DataStore, fetch_bigquery_rows  # noqa: E402
+from queries import SOURCE_DESCRIPTION  # noqa: E402
 
 OUT_PATH = APP_DIR / "data" / "snapshot.json"
 
@@ -33,11 +38,40 @@ OUT_PATH = APP_DIR / "data" / "snapshot.json"
 # means a broken query or permissions problem rather than real inventory loss.
 MIN_KEEP_RATIO = 0.5
 
+# CSV cells are all text; these become numbers (empty -> null), the rest stay text.
+NUMBER_COLUMNS = {
+    "latitude", "longitude", "monthly_price", "monthly_impression", "cpm",
+    "cpm_calculated", "size_x", "size_y", "area_m2",
+}
+
+
+def _csv_value(col: str, v: str):
+    if col == "inventory_id":
+        return int(v) if v.isdigit() else v
+    if col in NUMBER_COLUMNS:
+        return float(v) if v.strip() else None
+    return v
+
+
+def rows_from_csv(path: str) -> list:
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        return [
+            {c: _csv_value(c, r[c]) for c in ALL_COLUMNS if c in r}
+            for r in csv.DictReader(f)
+        ]
+
 
 def main() -> None:
-    print(f"Querying {OBT_TABLE} ...")
-    rows = fetch_bigquery_rows(timeout=300)
     generated_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if "--csv" in sys.argv:
+        csv_path = sys.argv[sys.argv.index("--csv") + 1]
+        print(f"Reading {csv_path} ...")
+        rows = rows_from_csv(csv_path)
+        source = f"{SOURCE_DESCRIPTION}, exported as {Path(csv_path).name}"
+    else:
+        print(f"Querying {SOURCE_DESCRIPTION} ...")
+        rows = fetch_bigquery_rows(timeout=300)
+        source = SOURCE_DESCRIPTION
 
     # Same loader the app uses: raises if a column the app reads is missing.
     store = DataStore(rows, generated_at, "snapshot")
@@ -54,7 +88,7 @@ def main() -> None:
 
     payload = {
         "generated_at": generated_at,
-        "source_table": OBT_TABLE,
+        "source_table": source,
         "row_count": len(rows),
         "rows": rows,
     }
