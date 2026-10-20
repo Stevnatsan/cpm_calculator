@@ -19,7 +19,7 @@ Environment variables (all optional):
     GOOGLE_APPLICATION_CREDENTIALS       or: path to a service-account key file
     DATA_CACHE_SECONDS                   how long live data is reused (default 3600)
     DATA_RETRY_SECONDS                   wait after a failed query (default 300)
-    BQ_PROJECT, BQ_TABLE                 see app/queries.py
+    BQ_PROJECT, BQ_DATASET               see app/queries.py
 """
 
 import datetime
@@ -58,11 +58,23 @@ class Billboard:
     cpm_calculated: Optional[float]
     monthly_impression_source: Optional[str]
     last_active_period: Optional[str]
+    # Billboard size, from scrInventory. Optional so data without it still loads;
+    # size_class is one of SIZE_CLASSES.
+    size_x: Optional[float] = None
+    size_y: Optional[float] = None
+    size_label: Optional[str] = None
+    area_m2: Optional[float] = None
+    size_class: Optional[str] = None
 
+
+# Size buckets as app/queries.py names them, smallest first.
+SIZE_CLASSES = ["<15m2", "15-30m2", "30-60m2", "60-90m2", "90-120m2", ">120m2", "Unknown"]
 
 # The columns every row must carry, from the snapshot file or from BigQuery.
-# app/queries.py selects exactly these names.
-REQUIRED_COLUMNS = [f.name for f in fields(Billboard)]
+# app/queries.py selects these names and the optional ones below.
+OPTIONAL_COLUMNS = ["size_x", "size_y", "size_label", "area_m2", "size_class"]
+REQUIRED_COLUMNS = [f.name for f in fields(Billboard) if f.name not in OPTIONAL_COLUMNS]
+ALL_COLUMNS = [f.name for f in fields(Billboard)]
 
 
 class SchemaError(ValueError):
@@ -87,7 +99,7 @@ def _plain(v):
 
 def to_billboard(row: dict) -> Billboard:
     # Extra columns are ignored so the query can grow without breaking the app.
-    return Billboard(**{c: _plain(row.get(c)) for c in REQUIRED_COLUMNS})
+    return Billboard(**{c: _plain(row.get(c)) for c in ALL_COLUMNS})
 
 
 def _is_usable(b: Billboard) -> bool:

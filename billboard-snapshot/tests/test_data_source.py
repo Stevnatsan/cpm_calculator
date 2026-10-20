@@ -50,9 +50,35 @@ def test_old_script_columns_are_rejected():
 def test_query_selects_every_column_the_app_reads():
     import queries
 
-    select = queries.SNAPSHOT_SQL.split("FROM (")[0]
-    for col in data_source.REQUIRED_COLUMNS:
-        assert col in select, col
+    # the last SELECT is the output; the CTEs above it build the source rows
+    select = queries.SNAPSHOT_SQL.rsplit("SELECT", 1)[1]
+    for col in data_source.ALL_COLUMNS:
+        assert f" AS {col}" in select or f"  {col},\n" in select or f"  {col}\n" in select, col
+
+
+def test_rows_without_size_still_load():
+    rows = [{k: v for k, v in r.items() if k not in data_source.OPTIONAL_COLUMNS} for r in fake_rows()]
+    d = DataStore(rows, "now", "bigquery")
+    assert len(d.billboards) == 3 and d.billboards[0].size_class is None
+
+
+def test_csv_export_loads_like_the_query(tmp_path):
+    import csv
+
+    sys.path.insert(0, str(ROOT))
+    import generate_snapshot
+
+    path = tmp_path / "bq.csv"
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=data_source.ALL_COLUMNS)
+        w.writeheader()
+        for r in fake_rows():
+            w.writerow({**{c: r.get(c) for c in data_source.ALL_COLUMNS}, "size_x": "", "size_class": "Unknown"})
+    rows = generate_snapshot.rows_from_csv(str(path))
+    d = DataStore(rows, "now", "snapshot")
+    b = d.billboards[0]
+    assert isinstance(b.inventory_id, int) and isinstance(b.monthly_price, float)
+    assert b.size_x is None and b.size_class == "Unknown"
 
 
 # ------------------------------------------------------------------ provider
@@ -159,3 +185,21 @@ def test_every_endpoint_answers_on_the_snapshot(client):
     assert "swaps" in client.post("/api/swaps", json={"ids": ids[:2]}).json()
     assert client.get("/api/market").json()["rows"]
     assert client.get("/api/market", params={"city": city}).json()["rows"]
+
+
+def test_size_filter(client):
+    city = client.get("/api/cities").json()["cities"][0]["city_name"]
+    sizes = client.get("/api/sizes", params={"city": city}).json()["sizes"]
+    names = [s["size_class"] for s in sizes]
+    assert names == [c for c in data_source.SIZE_CLASSES if c in names]  # smallest first
+    pick = max(sizes, key=lambda s: s["inventory_count"] if s["size_class"] != "Unknown" else 0)["size_class"]
+
+    req = {"city": city, "min_billboards": 1, "max_billboards": 3, "months": 1, "size_classes": [pick]}
+    out = client.post("/api/calculate", json=req).json()
+    assert out["plans"] and all(c["size_class"] == pick for c in out["candidates"])
+    for p in out["plans"]:
+        assert all(b["size_class"] == pick for b in p["billboards"])
+    assert client.post("/api/budget_curve", json=req).json()["points"]
+
+    none = client.post("/api/calculate", json={**req, "size_classes": ["no-such-size"]}).json()
+    assert none["plans"] == [] and "sizes" in none["message"]

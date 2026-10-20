@@ -76,6 +76,11 @@
                     <option value="DOOH">DOOH</option>
                   </select>
                 </div>
+                <div class="field full">
+                  <label for="sizePick">Size</label>
+                  <div class="chips" id="sizeChips"></div>
+                  <select id="sizePick"><option value="">Any size</option></select>
+                </div>
                 <div class="field">
                   <label for="minb">Min boards</label>
                   <input id="minb" type="number" min="1" max="6" value="1">
@@ -489,6 +494,7 @@ $('f').addEventListener('submit', async e => {
       impression_target: numVal('target') === '' ? 0 : +numVal('target'),
       display_type: $('dtype').value || null,
       area: areaPayload(),
+      size_classes: sizes.chosen.length ? sizes.chosen : null,
     });
     const res = await fetch('/api/calculate', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body,
@@ -497,7 +503,7 @@ $('f').addEventListener('submit', async e => {
       data: await res.json(), months: +$('months').value,
       budget: numVal('budget'), target: numVal('target'), city: $('city').value, dtype: $('dtype').value,
     };
-    lastPlanner.areaLabel = areaLabel();
+    lastPlanner.areaLabel = [areaLabel(), sizeLabel()].filter(Boolean).join(', ');
     render(lastPlanner.data, lastPlanner.months);
     drawPlannerPlan(lastPlanner.data);
     if (!lastPlanner.data.error) loadCurve(body);
@@ -799,7 +805,7 @@ async function runSearch() {
 
 // ---- rendering
 function tags(b) {
-  return [b.display_type_name, b.lighting_type, b.venue_type].filter(Boolean)
+  return [b.display_type_name, b.lighting_type, b.venue_type, boardSize(b)].filter(Boolean)
     .map(t => `<span class="tag">${esc(t)}</span>`).join('');
 }
 
@@ -951,14 +957,18 @@ function areaLabel() {
 
 async function onCityChange() {
   area.districts = []; clearCenter(); renderChips();
+  sizes.chosen = []; renderSizes();
   const city = encodeURIComponent($('city').value);
   try {
-    const [dd, pp] = await Promise.all([
+    const [dd, pp, ss] = await Promise.all([
       fetch('/api/districts?city=' + city).then(r => r.json()),
       fetch('/api/points?city=' + city).then(r => r.json()),
+      fetch('/api/sizes?city=' + city).then(r => r.json()),
     ]);
     cityDistricts = dd.districts || [];
+    sizes.city = ss.sizes || [];
     renderChips();
+    renderSizes();
     drawPoints(pp.points || []);
     if ($('heatToggle').checked) drawHeat();
   } catch (_) {}
@@ -985,6 +995,39 @@ $('distChips').addEventListener('click', e => {
   if (!btn) return;
   area.districts = area.districts.filter(d => d.key !== btn.dataset.undistrict);
   renderChips();
+});
+
+// ---- size filter: billboard size classes (by area), any number of them
+const SIZE_NAMES = {
+  '<15m2': 'Under 15 m²', '15-30m2': '15–30 m²', '30-60m2': '30–60 m²', '60-90m2': '60–90 m²',
+  '90-120m2': '90–120 m²', '>120m2': 'Over 120 m²', 'Unknown': 'Size not recorded',
+};
+const sizes = { chosen: [], city: [] };
+const sizeName = c => SIZE_NAMES[c] || c;
+function boardSize(b) {
+  return b.size_label && b.size_label !== 'Unknown' ? b.size_label.replace(' x ', ' × ') + ' m' : '';
+}
+function sizeLabel() { return sizes.chosen.map(sizeName).join(' / '); }
+
+function renderSizes() {
+  $('sizeChips').innerHTML = sizes.chosen.map(c =>
+    `<span class="chip">${esc(sizeName(c))}<button type="button" data-unsize="${esc(c)}"
+       aria-label="Remove ${esc(sizeName(c))}">×</button></span>`).join('');
+  $('sizePick').innerHTML =
+    `<option value="">${sizes.chosen.length ? 'Add another size…' : 'Any size'}</option>` +
+    sizes.city.filter(s => !sizes.chosen.includes(s.size_class)).map(s =>
+      `<option value="${esc(s.size_class)}">${esc(sizeName(s.size_class))} (${s.inventory_count})</option>`).join('');
+}
+$('sizePick').addEventListener('change', e => {
+  const c = e.target.value;
+  if (c && !sizes.chosen.includes(c)) sizes.chosen.push(c);
+  renderSizes();
+});
+$('sizeChips').addEventListener('click', e => {
+  const btn = e.target.closest('[data-unsize]');
+  if (!btn) return;
+  sizes.chosen = sizes.chosen.filter(c => c !== btn.dataset.unsize);
+  renderSizes();
 });
 
 // middle 90% of points, so one badly geocoded billboard doesn't zoom the map out to sea
@@ -1166,12 +1209,12 @@ async function exportExcel(plan) {
   ];
   if (plan.budget) summary.push(['Budget (Rp)', plan.budget], ['Budget left (Rp)', plan.budget - t.cost]);
   if (plan.target) summary.push(['Impression target', plan.target], ['% of target', t.impr / plan.target]);
-  const head = ['#', 'Billboard', 'Address', 'District', 'City', 'Type', 'Lighting', 'CPM (Rp)',
+  const head = ['#', 'Billboard', 'Address', 'District', 'City', 'Type', 'Lighting', 'Size', 'CPM (Rp)',
     'Price / month (Rp)', 'Months', 'Total cost (Rp)', 'Impressions / month', 'Total impressions',
     'Google Maps', 'Photo', 'Latitude', 'Longitude', 'Inventory ID', 'Last active'];
   const rows = plan.boards.map((b, i) => [
     i + 1, b.inventory_name, b.inventory_address, b.district_name, b.city_name, b.display_type_name,
-    b.lighting_type, b.cpm_calculated, b.monthly_price, m, b.monthly_price * m, b.monthly_impression,
+    b.lighting_type, boardSize(b), b.cpm_calculated, b.monthly_price, m, b.monthly_price * m, b.monthly_impression,
     b.monthly_impression * m, hasPos(b) ? 'Open map' : '', b.image_url ? 'View photo' : '',
     b.latitude, b.longitude, b.inventory_id, b.last_active_period,
   ]);
@@ -1251,7 +1294,7 @@ async function exportPdf(plan) {
     body: plan.boards.map((b, i) => [
       i + 1, '',
       `${b.inventory_name || ''}\n${[b.inventory_address, b.district_name].filter(Boolean).join(' · ')}`,
-      [b.display_type_name, b.lighting_type].filter(Boolean).join(' / '),
+      [b.display_type_name, b.lighting_type, boardSize(b)].filter(Boolean).join(' / '),
       cpm(b.cpm_calculated), rp(b.monthly_price), rp(b.monthly_price * m),
       num(b.monthly_impression), num(b.monthly_impression * m), hasPos(b) ? 'Open' : '',
     ]),

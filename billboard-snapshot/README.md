@@ -17,6 +17,14 @@ python generate_snapshot.py
 This writes `app/data/snapshot.json`. Commit it (or re-upload it) whenever
 you redeploy.
 
+No local BigQuery login? Paste the query from `app/queries.py` (or
+`SNAPSHOT_SQL` printed with `python -c "import sys; sys.path.insert(0, 'app'); import queries; print(queries.SNAPSHOT_SQL)"`)
+into the BigQuery console, save the results as CSV, then:
+
+```bash
+python generate_snapshot.py --csv bq-results.csv
+```
+
 ## 2. Run it locally to check
 
 ```bash
@@ -54,7 +62,7 @@ market, budget curve, saved plans) sees the same data either way.
 1. In Google Cloud (project `stickearn-bi`, or whichever project should pay
    for the queries), create a service account, e.g. `cpm-calculator-reader`.
 2. Give it **BigQuery Job User** on the project that runs the queries, and
-   **BigQuery Data Viewer** on the `cleanse_playlog` dataset.
+   **BigQuery Data Viewer** on the `raw_core3_admin` dataset.
 3. Create a JSON key for it and download it. Treat it like a password.
 
 ### Option A: scheduled snapshot refresh (recommended first)
@@ -85,7 +93,7 @@ In Vercel > Project > Settings > Environment Variables, add:
 | `DATA_SOURCE` | `bigquery` |
 | `GOOGLE_APPLICATION_CREDENTIALS_JSON` | the whole JSON key file |
 | `DATA_CACHE_SECONDS` | optional, default `3600` |
-| `BQ_PROJECT` / `BQ_TABLE` | optional, defaults in `app/queries.py` |
+| `BQ_PROJECT` / `BQ_DATASET` | optional, defaults in `app/queries.py` |
 
 and add `google-cloud-bigquery>=3.17` to `requirements.txt`, then redeploy.
 

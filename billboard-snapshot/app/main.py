@@ -241,16 +241,28 @@ class CalcRequest(BaseModel):
     impression_target: float = 0  # 0 = no impression target
     display_type: Optional[str] = None  # 'OOH' | 'DOOH' | None
     area: Optional[Area] = None  # optional district / distance targeting
+    size_classes: Optional[List[str]] = None  # SIZE_CLASSES values; None/empty = any size
 
 
-def fetch_candidates(city: str, display_type: Optional[str], area: Optional[Area] = None) -> List[Billboard]:
+def size_class(b: Billboard) -> str:
+    return b.size_class or "Unknown"
+
+
+def fetch_candidates(
+    city: str,
+    display_type: Optional[str],
+    area: Optional[Area] = None,
+    size_classes: Optional[List[str]] = None,
+) -> List[Billboard]:
     city_key = city.strip().lower()
+    sizes = set(size_classes or [])
     rows = [
         b
         for b in data().billboards
         if b.city_name.strip().lower() == city_key
         and (not display_type or b.display_type_name == display_type)
         and (not area or area.matches(b))
+        and (not sizes or size_class(b) in sizes)
     ]
     # cheapest CPM first, same ordering the live version's SQL used
     rows.sort(key=lambda b: (b.cpm_calculated is None, b.cpm_calculated or 0.0))
@@ -370,6 +382,20 @@ def districts(city: str, _: None = Depends(require_auth)):
     return {"districts": rows}
 
 
+@app.get("/api/sizes")
+def sizes(city: str, _: None = Depends(require_auth)):
+    """Billboard count per size class in a city, smallest first, for the size filter."""
+    city_key = city.strip().lower()
+    counts = Counter(size_class(b) for b in data().billboards if b.city_name.strip().lower() == city_key)
+    return {
+        "sizes": [
+            {"size_class": c, "inventory_count": counts[c]}
+            for c in data_source.SIZE_CLASSES
+            if counts[c]
+        ]
+    }
+
+
 @app.get("/api/points")
 def points(city: str, display_type: Optional[str] = None, _: None = Depends(require_auth)):
     """Every billboard in a city as a small map point, for the planner map."""
@@ -440,13 +466,18 @@ def calculate(req: CalcRequest, _: None = Depends(require_auth)):
         )
 
     area = req.area if req.area and req.area.active() else None
-    candidates = fetch_candidates(req.city, req.display_type, area)
+    candidates = fetch_candidates(req.city, req.display_type, area, req.size_classes)
 
     if not candidates:
         where = f"the selected area of {req.city}" if area else req.city
+        hints = (["a bigger radius or more districts"] if area else []) + (
+            ["more sizes"] if req.size_classes else []
+        )
         return {
-            "message": f"No priced inventory with impression data found in {where}."
-            + (" Try a bigger radius or more districts." if area else ""),
+            "message": f"No priced inventory with impression data found in {where}"
+            + (" for the chosen sizes" if req.size_classes else "")
+            + "."
+            + (f" Try {' or '.join(hints)}." if hints else ""),
             "plans": [],
             "candidates": [],
             "candidate_count": 0,
@@ -691,7 +722,7 @@ def budget_curve(req: CalcRequest, _: None = Depends(require_auth)):
     if req.min_billboards < 1 or req.max_billboards < req.min_billboards or req.max_billboards > 6:
         return JSONResponse({"error": "invalid billboard count range"}, status_code=400)
     area = req.area if req.area and req.area.active() else None
-    candidates = fetch_candidates(req.city, req.display_type, area)
+    candidates = fetch_candidates(req.city, req.display_type, area, req.size_classes)
     months = max(1, req.months)
     if len(candidates) < req.min_billboards:
         return {"points": [], "message": "Not enough billboards in this area to draw a budget curve."}
