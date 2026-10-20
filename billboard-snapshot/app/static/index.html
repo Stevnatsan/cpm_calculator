@@ -494,7 +494,8 @@ $('f').addEventListener('submit', async e => {
       impression_target: numVal('target') === '' ? 0 : +numVal('target'),
       display_type: $('dtype').value || null,
       area: areaPayload(),
-      size_classes: sizes.chosen.length ? sizes.chosen : null,
+      size_classes: sizePayload('class'),
+      size_labels: sizePayload('size'),
     });
     const res = await fetch('/api/calculate', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body,
@@ -997,26 +998,42 @@ $('distChips').addEventListener('click', e => {
   renderChips();
 });
 
-// ---- size filter: billboard size classes (by area), any number of them
+// ---- size filter: size classes (by area) and exact sizes (e.g. 5 x 10), any mix of them.
+// Chosen items are keys: 'class:30-60m2' or 'size:5 x 10'.
 const SIZE_NAMES = {
   '<15m2': 'Under 15 m²', '15-30m2': '15–30 m²', '30-60m2': '30–60 m²', '60-90m2': '60–90 m²',
   '90-120m2': '90–120 m²', '>120m2': 'Over 120 m²', 'Unknown': 'Size not recorded',
 };
 const sizes = { chosen: [], city: [] };
 const sizeName = c => SIZE_NAMES[c] || c;
+const dims = l => l.replace(' x ', ' × ') + ' m';
 function boardSize(b) {
-  return b.size_label && b.size_label !== 'Unknown' ? b.size_label.replace(' x ', ' × ') + ' m' : '';
+  return b.size_label && b.size_label !== 'Unknown' ? dims(b.size_label) : '';
 }
-function sizeLabel() { return sizes.chosen.map(sizeName).join(' / '); }
+function sizeKeyName(k) {
+  const [kind, v] = [k.slice(0, k.indexOf(':')), k.slice(k.indexOf(':') + 1)];
+  return kind === 'class' ? sizeName(v) : dims(v);
+}
+function sizePayload(kind) {
+  const vals = sizes.chosen.filter(k => k.startsWith(kind + ':')).map(k => k.slice(kind.length + 1));
+  return vals.length ? vals : null;
+}
+function sizeLabel() { return sizes.chosen.map(sizeKeyName).join(' / '); }
 
 function renderSizes() {
-  $('sizeChips').innerHTML = sizes.chosen.map(c =>
-    `<span class="chip">${esc(sizeName(c))}<button type="button" data-unsize="${esc(c)}"
-       aria-label="Remove ${esc(sizeName(c))}">×</button></span>`).join('');
+  $('sizeChips').innerHTML = sizes.chosen.map(k =>
+    `<span class="chip">${esc(sizeKeyName(k))}<button type="button" data-unsize="${esc(k)}"
+       aria-label="Remove ${esc(sizeKeyName(k))}">×</button></span>`).join('');
+  const opt = (k, text, n) => sizes.chosen.includes(k) ? ''
+    : `<option value="${esc(k)}">${esc(text)} (${n})</option>`;
+  // one group per class: the whole class first, then its exact sizes, most common first
   $('sizePick').innerHTML =
     `<option value="">${sizes.chosen.length ? 'Add another size…' : 'Any size'}</option>` +
-    sizes.city.filter(s => !sizes.chosen.includes(s.size_class)).map(s =>
-      `<option value="${esc(s.size_class)}">${esc(sizeName(s.size_class))} (${s.inventory_count})</option>`).join('');
+    sizes.city.map(c => `<optgroup label="${esc(sizeName(c.size_class))}">` +
+      opt('class:' + c.size_class, (c.size_class === 'Unknown' ? '' : 'All ') + sizeName(c.size_class),
+        c.inventory_count) +
+      (c.sizes || []).map(s => opt('size:' + s.size_label, dims(s.size_label), s.inventory_count)).join('') +
+      '</optgroup>').join('');
 }
 $('sizePick').addEventListener('change', e => {
   const c = e.target.value;

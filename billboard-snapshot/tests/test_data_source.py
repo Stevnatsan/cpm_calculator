@@ -201,5 +201,12 @@ def test_size_filter(client):
         assert all(b["size_class"] == pick for b in p["billboards"])
     assert client.post("/api/budget_curve", json=req).json()["points"]
 
+    # exact sizes: counts add up to their class, and the filter keeps only those sizes
+    group = next(s for s in sizes if s["size_class"] == pick)
+    assert sum(x["inventory_count"] for x in group["sizes"]) == group["inventory_count"]
+    label = group["sizes"][0]["size_label"]
+    exact = client.post("/api/calculate", json={**req, "size_classes": None, "size_labels": [label]}).json()
+    assert exact["plans"] and all(c["size_label"] == label for c in exact["candidates"])
+
     none = client.post("/api/calculate", json={**req, "size_classes": ["no-such-size"]}).json()
     assert none["plans"] == [] and "sizes" in none["message"]
